@@ -1,8 +1,12 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { AlertCircle, Check, Lightbulb } from "lucide-react"
+import { AlertCircle, Check, Lightbulb, Plus, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { COUNTRY_LANGUAGES, COUNTRY_OPTIONS, type RegionItem } from "@/lib/geo-data"
 
 export function SectionCard({
   step,
@@ -120,6 +124,131 @@ export function ChipGroup({
           </button>
         )
       })}
+    </div>
+  )
+}
+
+// 国家-语言级联编辑器：国家为语言上一级，切换国家后语言重置
+export function RegionEditor({
+  value,
+  onChange,
+}: {
+  value: RegionItem[]
+  onChange: (next: RegionItem[]) => void
+}) {
+  function update(id: string, patch: Partial<RegionItem>) {
+    onChange(value.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+  }
+  function setCountry(id: string, country: string) {
+    // 切换国家后语言重置，若该国家只有一种语言则自动选中
+    const langs = COUNTRY_LANGUAGES[country] ?? []
+    update(id, { country, language: langs.length === 1 ? langs[0] : "" })
+  }
+  function add() {
+    onChange([...value, { id: `r${Date.now()}`, country: "", language: "" }])
+  }
+  function remove(id: string) {
+    onChange(value.filter((r) => r.id !== id))
+  }
+  return (
+    <div className="space-y-2.5">
+      {value.map((r, i) => {
+        const langs = r.country ? COUNTRY_LANGUAGES[r.country] ?? [] : []
+        return (
+          <div key={r.id} className="flex items-center gap-2">
+            <Select value={r.country} onValueChange={(v) => setCountry(r.id, v)}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="选择国家或地区">{r.country || "选择国家或地区"}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRY_OPTIONS.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="shrink-0 text-sm text-muted-foreground">-</span>
+            <Select value={r.language} onValueChange={(v) => update(r.id, { language: v })} disabled={!r.country}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder={r.country ? "选择语言" : "请先选国家"}>{r.language || (r.country ? "选择语言" : "请先选国家")}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {langs.map((l) => (
+                  <SelectItem key={l} value={l}>
+                    {l}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {value.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="shrink-0 text-muted-foreground"
+                onClick={() => remove(r.id)}
+                aria-label={`删除第 ${i + 1} 个国家语言`}
+              >
+                <X className="size-4" />
+              </Button>
+            )}
+          </div>
+        )
+      })}
+      <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={add}>
+        <Plus className="size-4" />
+        添加国家 / 语言
+      </Button>
+    </div>
+  )
+}
+
+// 动态多行文本编辑器：一行一个，可添加 / 删除
+export function RowList({
+  value,
+  onChange,
+  placeholder,
+  addLabel = "添加一行",
+}: {
+  value: string[]
+  onChange: (next: string[]) => void
+  placeholder?: (index: number) => string
+  addLabel?: string
+}) {
+  function update(i: number, val: string) {
+    onChange(value.map((v, idx) => (idx === i ? val : v)))
+  }
+  function add() {
+    onChange([...value, ""])
+  }
+  function remove(i: number) {
+    onChange(value.filter((_, idx) => idx !== i))
+  }
+  return (
+    <div className="space-y-2">
+      {value.map((v, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="w-5 shrink-0 text-right text-sm tabular-nums text-muted-foreground">{i + 1}.</span>
+          <Input placeholder={placeholder?.(i)} value={v} onChange={(e) => update(i, e.target.value)} />
+          {value.length > 1 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-muted-foreground"
+              onClick={() => remove(i)}
+              aria-label={`删除第 ${i + 1} 行`}
+            >
+              <X className="size-4" />
+            </Button>
+          )}
+        </div>
+      ))}
+      <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={add}>
+        <Plus className="size-4" />
+        {addLabel}
+      </Button>
     </div>
   )
 }

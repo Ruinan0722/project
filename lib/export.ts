@@ -1,4 +1,11 @@
-import { STATUS_META, goalLabel, type RequestRecord } from "./geo-data"
+import {
+  STATUS_META,
+  goalLabel,
+  intentText,
+  maskUrl,
+  regionLabel,
+  type RequestRecord,
+} from "./geo-data"
 
 const HEADERS = [
   "需求编号",
@@ -9,10 +16,11 @@ const HEADERS = [
   "手机号",
   "品牌名称",
   "产品或服务",
-  "产品介绍",
-  "海外官网",
-  "目标国家",
-  "目标语言",
+  "产品功能",
+  "主要用户群体",
+  "应用场景",
+  "海外官网（脱敏）",
+  "目标国家-语言",
   "AI 平台",
   "用户问题/方向",
   "优化目标",
@@ -22,7 +30,6 @@ const HEADERS = [
 
 function rowOf(r: RequestRecord): string[] {
   const d = r.data
-  const intent = d.intentType === "clear" ? d.intentClear : d.intentType === "rough" ? d.intentRough : ""
   return [
     r.code,
     STATUS_META[r.status].label,
@@ -32,12 +39,13 @@ function rowOf(r: RequestRecord): string[] {
     d.contactPhone,
     d.brandName,
     d.products.map((p) => p.name).filter(Boolean).join(" / "),
-    d.productIntro.replace(/\n/g, " "),
-    d.hasOverseasSite === "yes" ? d.overseasSiteUrl : "无",
-    d.countries.join("、"),
-    d.languages.join("、"),
+    d.productFunction,
+    d.productUsers,
+    d.productScenario,
+    d.hasOverseasSite === "yes" ? maskUrl(d.overseasSiteUrl) : "无",
+    regionLabel(d.regions),
     d.platforms.join("、"),
-    intent.replace(/\n/g, " "),
+    intentText(d).replace(/\n/g, " "),
     goalLabel(d.goal),
     r.owner,
     r.submittedAt,

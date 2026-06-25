@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatusBadge } from "@/components/status-badge"
 import { useAdmin } from "./store"
-import { STATUS_META, goalLabel, type RequestStatus } from "@/lib/geo-data"
+import { STATUS_META, goalLabel, regionLabel, type RequestStatus } from "@/lib/geo-data"
 import { exportCsv } from "@/lib/export"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -117,7 +117,7 @@ export function RequestList() {
               <tr className="border-b border-border bg-secondary/40 text-left text-xs text-muted-foreground">
                 <th className="px-4 py-3 font-medium">需求编号</th>
                 <th className="px-4 py-3 font-medium">公司 / 品牌</th>
-                <th className="px-4 py-3 font-medium">目标国家</th>
+                <th className="px-4 py-3 font-medium">目标国家-语言</th>
                 <th className="px-4 py-3 font-medium">优化目标</th>
                 <th className="px-4 py-3 font-medium">状态</th>
                 <th className="px-4 py-3 font-medium">跟进人</th>
@@ -133,7 +133,7 @@ export function RequestList() {
                     <p className="font-medium">{r.data.companyName}</p>
                     <p className="text-xs text-muted-foreground">{r.data.brandName}</p>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.data.countries.join("、") || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{regionLabel(r.data.regions)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{goalLabel(r.data.goal)}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={r.status} />

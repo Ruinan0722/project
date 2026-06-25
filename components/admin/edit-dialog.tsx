@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -12,12 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ChipGroup, ChoiceCard, Field } from "@/components/apply/form-bits"
+import { ChoiceCard, Field, RegionEditor } from "@/components/apply/form-bits"
 import { useAdmin } from "./store"
 import {
-  AI_PLATFORM_OPTIONS,
-  COUNTRY_OPTIONS,
-  LANGUAGE_OPTIONS,
+  DEFAULT_PLATFORM,
   OPTIMIZATION_GOALS,
   type GeoFormData,
   type RequestRecord,
@@ -77,9 +74,17 @@ export function EditDialog({
             </Field>
           </div>
 
-          <Field label="产品介绍" required>
-            <Textarea rows={3} value={draft.productIntro} onChange={(e) => set("productIntro", e.target.value)} />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="产品功能" required>
+              <Input value={draft.productFunction} onChange={(e) => set("productFunction", e.target.value)} />
+            </Field>
+            <Field label="主要用户群体" required>
+              <Input value={draft.productUsers} onChange={(e) => set("productUsers", e.target.value)} />
+            </Field>
+            <Field label="应用场景" required>
+              <Input value={draft.productScenario} onChange={(e) => set("productScenario", e.target.value)} />
+            </Field>
+          </div>
 
           <Field label="是否有海外官网" required>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -93,14 +98,13 @@ export function EditDialog({
             </Field>
           )}
 
-          <Field label="目标国家或地区" required>
-            <ChipGroup options={COUNTRY_OPTIONS} value={draft.countries} onChange={(v) => set("countries", v)} />
-          </Field>
-          <Field label="目标语言" required>
-            <ChipGroup options={LANGUAGE_OPTIONS} value={draft.languages} onChange={(v) => set("languages", v)} />
+          <Field label="目标国家与语言" required>
+            <RegionEditor value={draft.regions} onChange={(v) => set("regions", v)} />
           </Field>
           <Field label="AI 平台" required>
-            <ChipGroup options={AI_PLATFORM_OPTIONS} value={draft.platforms} onChange={(v) => set("platforms", v)} />
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3.5 py-1.5 text-sm text-primary-foreground">
+              {DEFAULT_PLATFORM}
+            </div>
           </Field>
           <Field label="具体优化目标" required>
             <div className="grid gap-2 sm:grid-cols-2">

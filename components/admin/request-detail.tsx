@@ -27,9 +27,11 @@ import { StatusBadge } from "@/components/status-badge"
 import { useAdmin } from "./store"
 import { EditDialog } from "./edit-dialog"
 import {
-  AI_PLATFORM_OPTIONS,
   STATUS_META,
   goalLabel,
+  intentText,
+  maskUrl,
+  regionTags,
   type RequestStatus,
 } from "@/lib/geo-data"
 import { exportCsv } from "@/lib/export"
@@ -63,7 +65,7 @@ export function RequestDetail({ id }: { id: string }) {
   }
 
   const d = record.data
-  const intent = d.intentType === "clear" ? d.intentClear : d.intentType === "rough" ? d.intentRough : ""
+  const intent = intentText(d)
 
   function submitNote() {
     if (!note.trim()) return
@@ -132,20 +134,19 @@ export function RequestDetail({ id }: { id: string }) {
                   ["产品或服务", d.products.map((p) => p.name).filter(Boolean).join(" / ") || "—"],
                 ]}
               />
-              <InfoRow label="产品介绍">
-                <p className="whitespace-pre-line text-sm leading-relaxed">{d.productIntro || "—"}</p>
-              </InfoRow>
-              <InfoRow label="海外官网">
+              <InfoGrid
+                items={[
+                  ["产品功能", d.productFunction],
+                  ["主要用户群体", d.productUsers],
+                  ["应用场景", d.productScenario],
+                ]}
+              />
+              <InfoRow label="海外官网（已脱敏）">
                 {d.hasOverseasSite === "yes" && d.overseasSiteUrl ? (
-                  <a
-                    href={d.overseasSiteUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                  >
-                    <Globe className="size-3.5" />
-                    {d.overseasSiteUrl}
-                  </a>
+                  <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
+                    <Globe className="size-3.5 text-muted-foreground" />
+                    {maskUrl(d.overseasSiteUrl)}
+                  </span>
                 ) : (
                   <span className="text-sm text-muted-foreground">暂无海外官网</span>
                 )}
@@ -153,14 +154,11 @@ export function RequestDetail({ id }: { id: string }) {
             </DetailSection>
 
             <DetailSection icon={Target} title="GEO 优化需求">
-              <InfoRow label="目标国家或地区">
-                <TagList items={d.countries} />
-              </InfoRow>
-              <InfoRow label="目标语言">
-                <TagList items={d.languages} />
+              <InfoRow label="目标国家与语言">
+                <TagList items={regionTags(d.regions)} />
               </InfoRow>
               <InfoRow label="AI 平台">
-                <TagList items={d.platforms.length ? d.platforms : AI_PLATFORM_OPTIONS.slice(0, 0)} />
+                <TagList items={d.platforms} />
               </InfoRow>
               <InfoRow label="用户问题 / 业务方向">
                 {intent ? (

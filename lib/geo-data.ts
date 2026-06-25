@@ -24,40 +24,28 @@ export const STATUS_META: Record<
 
 // ===== 表单基础选项配置 =====
 
-export const COUNTRY_OPTIONS = [
-  "美国",
-  "英国",
-  "加拿大",
-  "德国",
-  "法国",
-  "日本",
-  "韩国",
-  "澳大利亚",
-  "东南亚",
-  "中东",
-]
+// 国家是语言的上一级：每个国家对应可选语言
+export const COUNTRY_LANGUAGES: Record<string, string[]> = {
+  美国: ["英语", "西班牙语"],
+  英国: ["英语"],
+  加拿大: ["英语", "法语"],
+  德国: ["德语", "英语"],
+  法国: ["法语", "英语"],
+  日本: ["日语", "英语"],
+  韩国: ["韩语", "英语"],
+  澳大利亚: ["英语"],
+  东南亚: ["英语", "马来语", "泰语", "越南语", "印尼语"],
+  中东: ["阿拉伯语", "英语"],
+}
 
-export const LANGUAGE_OPTIONS = [
-  "英语",
-  "德语",
-  "法语",
-  "西班牙语",
-  "日语",
-  "韩语",
-  "阿拉伯语",
-  "葡萄牙语",
-]
+export const COUNTRY_OPTIONS = Object.keys(COUNTRY_LANGUAGES)
 
-export const AI_PLATFORM_OPTIONS = [
-  "ChatGPT",
-  "Google AI Overview",
-  "Gemini",
-  "Perplexity",
-  "Claude",
-  "Copilot",
-  "其他",
-  "暂不清楚",
-]
+// 全部语言选项（去重），用于系统配置的选项库管理
+export const LANGUAGE_OPTIONS = Array.from(new Set(Object.values(COUNTRY_LANGUAGES).flat()))
+
+// AI 平台：当前仅支持 ChatGPT，并默认选中
+export const AI_PLATFORM_OPTIONS = ["ChatGPT"]
+export const DEFAULT_PLATFORM = "ChatGPT"
 
 export const OPTIMIZATION_GOALS = [
   { value: "source", label: "来源率 ≥ 30%", desc: "品牌官网/内容被 AI 引用作为信息来源的比例" },
@@ -73,6 +61,13 @@ export interface ProductItem {
   name: string
 }
 
+// 国家-语言对（国家为语言上一级）
+export interface RegionItem {
+  id: string
+  country: string
+  language: string
+}
+
 export interface GeoFormData {
   // 一、项目联系人
   companyName: string
@@ -82,15 +77,16 @@ export interface GeoFormData {
   // 二、品牌与产品信息
   brandName: string
   products: ProductItem[]
-  productIntro: string
+  productFunction: string // 产品功能
+  productUsers: string // 主要用户群体
+  productScenario: string // 应用场景
   hasOverseasSite: "yes" | "no" | ""
   overseasSiteUrl: string
   // 三、GEO 优化需求
-  countries: string[]
-  languages: string[]
-  platforms: string[]
+  regions: RegionItem[] // 国家-语言对
+  platforms: string[] // 当前固定为 ChatGPT
   intentType: "clear" | "rough" | ""
-  intentClear: string
+  intentQuestions: string[] // 明确的问题，一行一个
   intentRough: string
   goal: string
 }
@@ -103,17 +99,68 @@ export function emptyForm(): GeoFormData {
     contactPhone: "",
     brandName: "",
     products: [{ id: "p1", name: "" }],
-    productIntro: "",
+    productFunction: "",
+    productUsers: "",
+    productScenario: "",
     hasOverseasSite: "",
     overseasSiteUrl: "",
-    countries: [],
-    languages: [],
-    platforms: ["ChatGPT"],
+    regions: [{ id: "r1", country: "", language: "" }],
+    platforms: [DEFAULT_PLATFORM],
     intentType: "",
-    intentClear: "",
+    intentQuestions: [""],
     intentRough: "",
     goal: "",
   }
+}
+
+// ===== 工具函数 =====
+
+export function goalLabel(value: string): string {
+  return OPTIMIZATION_GOALS.find((g) => g.value === value)?.label ?? "—"
+}
+
+// 国家-语言对展示：美国-英语；英国-英语
+export function regionLabel(regions: RegionItem[]): string {
+  const valid = regions.filter((r) => r.country)
+  if (!valid.length) return "—"
+  return valid.map((r) => (r.language ? `${r.country}-${r.language}` : r.country)).join("；")
+}
+
+export function regionTags(regions: RegionItem[]): string[] {
+  return regions.filter((r) => r.country).map((r) => (r.language ? `${r.country}-${r.language}` : `${r.country}（待补充语言）`))
+}
+
+// 官网地址脱敏：隐藏域名中的品牌名，避免暴露真实品牌
+export function maskUrl(url: string): string {
+  if (!url) return ""
+  const raw = url.trim()
+  try {
+    const u = new URL(raw.startsWith("http") ? raw : `https://${raw}`)
+    const host = u.hostname.replace(/^www\./, "")
+    const parts = host.split(".")
+    const name = parts[0]
+    const masked =
+      name.length <= 2 ? `${name[0] ?? ""}*` : `${name[0]}${"*".repeat(Math.max(3, name.length - 2))}${name[name.length - 1]}`
+    const rest = parts.slice(1).join(".")
+    return `${u.protocol}//${masked}${rest ? "." + rest : ""}`
+  } catch {
+    return raw.replace(/[a-zA-Z0-9]/g, "*")
+  }
+}
+
+// 产品介绍合并展示（用于导出）
+export function productIntroText(d: GeoFormData): string {
+  const parts: string[] = []
+  if (d.productFunction) parts.push(`功能：${d.productFunction}`)
+  if (d.productUsers) parts.push(`用户：${d.productUsers}`)
+  if (d.productScenario) parts.push(`场景：${d.productScenario}`)
+  return parts.join("；")
+}
+
+export function intentText(d: GeoFormData): string {
+  if (d.intentType === "clear") return d.intentQuestions.filter((q) => q.trim()).join("\n")
+  if (d.intentType === "rough") return d.intentRough
+  return ""
 }
 
 // ===== 后台需求记录 =====
@@ -157,16 +204,23 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactPhone: "13800000000",
       brandName: "Dreamina",
       products: [{ id: "p1", name: "AI 图片生成工具" }, { id: "p2", name: "AI 海报设计" }],
-      productIntro:
-        "Dreamina 是一款面向设计师、内容创作者和营销人员的 AI 设计工具；\n主要用户为设计师、产品经理等；\n可用于图片生成、海报设计、商品图制作和创意内容生成。",
+      productFunction: "提供 AI 图片生成、海报设计与商品图制作能力",
+      productUsers: "设计师、内容创作者、营销人员",
+      productScenario: "图片生成、海报设计、商品图制作和创意内容生成",
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://dreamina.capcut.com/",
-      countries: ["美国", "英国", "日本"],
-      languages: ["英语", "日语"],
-      platforms: ["ChatGPT", "Gemini", "Perplexity"],
+      regions: [
+        { id: "r1", country: "美国", language: "英语" },
+        { id: "r2", country: "英国", language: "英语" },
+        { id: "r3", country: "日本", language: "日语" },
+      ],
+      platforms: ["ChatGPT"],
       intentType: "clear",
-      intentClear:
-        "哪个 AI 工具适合制作海报？\n初学者适合使用什么 AI 设计工具？\nDreamina 和 Midjourney 哪个更适合制作商品图？",
+      intentQuestions: [
+        "哪个 AI 工具适合制作海报？",
+        "初学者适合使用什么 AI 设计工具？",
+        "Dreamina 和 Midjourney 哪个更适合制作商品图？",
+      ],
       intentRough: "",
       goal: "recommend",
     },
@@ -186,15 +240,19 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactPhone: "13911112222",
       brandName: "Anker",
       products: [{ id: "p1", name: "充电宝" }, { id: "p2", name: "氮化镓充电器" }],
-      productIntro:
-        "Anker 是全球领先的消费电子充电品牌；\n主要面向数码爱好者与差旅人群；\n应用场景覆盖日常充电、户外出行与办公。",
+      productFunction: "提供移动充电与快充电源解决方案",
+      productUsers: "数码爱好者与差旅人群",
+      productScenario: "日常充电、户外出行与办公",
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://www.anker.com/",
-      countries: ["美国", "德国", "英国"],
-      languages: ["英语", "德语"],
-      platforms: ["ChatGPT", "Google AI Overview"],
+      regions: [
+        { id: "r1", country: "美国", language: "英语" },
+        { id: "r2", country: "德国", language: "德语" },
+        { id: "r3", country: "英国", language: "英语" },
+      ],
+      platforms: ["ChatGPT"],
       intentType: "rough",
-      intentClear: "",
+      intentQuestions: [""],
       intentRough: "希望用户在询问“哪个品牌充电宝好用”“出差带什么充电器”时看到我们的品牌。",
       goal: "top3",
     },
@@ -214,15 +272,19 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactPhone: "13722223333",
       brandName: "EcoFlow",
       products: [{ id: "p1", name: "户外储能电源" }],
-      productIntro:
-        "EcoFlow 提供便携储能与户外电源解决方案；\n主要面向露营、房车及应急用电人群；\n应用于户外露营、应急备电等场景。",
+      productFunction: "提供便携储能与户外电源解决方案",
+      productUsers: "露营、房车及应急用电人群",
+      productScenario: "户外露营、应急备电",
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://www.ecoflow.com/",
-      countries: ["美国", "加拿大", "澳大利亚"],
-      languages: [],
-      platforms: ["ChatGPT", "Perplexity"],
+      regions: [
+        { id: "r1", country: "美国", language: "" },
+        { id: "r2", country: "加拿大", language: "" },
+        { id: "r3", country: "澳大利亚", language: "" },
+      ],
+      platforms: ["ChatGPT"],
       intentType: "rough",
-      intentClear: "",
+      intentQuestions: [""],
       intentRough: "希望用户咨询户外电源、应急备电时看到我们。",
       goal: "source",
     },
@@ -242,15 +304,20 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactPhone: "13633334444",
       brandName: "SHEIN",
       products: [{ id: "p1", name: "跨境快时尚服饰" }, { id: "p2", name: "美妆个护" }],
-      productIntro:
-        "SHEIN 是全球性快时尚电商平台；\n主要面向年轻女性消费者；\n应用于在线服饰与美妆购物。",
+      productFunction: "提供跨境快时尚服饰与美妆个护商品",
+      productUsers: "年轻女性消费者",
+      productScenario: "在线服饰与美妆购物",
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://www.shein.com/",
-      countries: ["美国", "英国", "法国", "中东"],
-      languages: ["英语", "法语", "阿拉伯语"],
-      platforms: ["ChatGPT", "Gemini", "Copilot"],
+      regions: [
+        { id: "r1", country: "美国", language: "英语" },
+        { id: "r2", country: "英国", language: "英语" },
+        { id: "r3", country: "法国", language: "法语" },
+        { id: "r4", country: "中东", language: "阿拉伯语" },
+      ],
+      platforms: ["ChatGPT"],
       intentType: "clear",
-      intentClear: "平价快时尚有哪些值得买的品牌？\n哪个网站买衣服性价比高？",
+      intentQuestions: ["平价快时尚有哪些值得买的品牌？", "哪个网站买衣服性价比高？"],
       intentRough: "",
       goal: "priority",
     },
@@ -270,14 +337,15 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactPhone: "13544445555",
       brandName: "Aukey",
       products: [{ id: "p1", name: "" }],
-      productIntro: "",
+      productFunction: "",
+      productUsers: "",
+      productScenario: "",
       hasOverseasSite: "no",
       overseasSiteUrl: "",
-      countries: ["美国"],
-      languages: [],
+      regions: [{ id: "r1", country: "美国", language: "" }],
       platforms: ["ChatGPT"],
       intentType: "",
-      intentClear: "",
+      intentQuestions: [""],
       intentRough: "",
       goal: "",
     },
@@ -297,14 +365,18 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactPhone: "13455556666",
       brandName: "PlayX",
       products: [{ id: "p1", name: "休闲手游" }],
-      productIntro: "面向全球休闲玩家的手游产品。",
+      productFunction: "面向全球休闲玩家的手游产品",
+      productUsers: "全球休闲玩家",
+      productScenario: "移动端休闲娱乐",
       hasOverseasSite: "no",
       overseasSiteUrl: "",
-      countries: ["日本", "韩国"],
-      languages: ["日语", "韩语"],
+      regions: [
+        { id: "r1", country: "日本", language: "日语" },
+        { id: "r2", country: "韩国", language: "韩语" },
+      ],
       platforms: ["ChatGPT"],
       intentType: "rough",
-      intentClear: "",
+      intentQuestions: [""],
       intentRough: "希望玩家寻找休闲手游推荐时看到我们。",
       goal: "recommend",
     },
@@ -324,21 +396,21 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactPhone: "13366667777",
       brandName: "UGREEN",
       products: [{ id: "p1", name: "数码配件" }, { id: "p2", name: "扩展坞" }],
-      productIntro:
-        "UGREEN 提供数码连接与扩展配件；\n面向数码用户与办公人群；\n应用于设备连接、扩展与充电场景。",
+      productFunction: "提供数码连接与扩展配件",
+      productUsers: "数码用户与办公人群",
+      productScenario: "设备连接、扩展与充电",
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://www.ugreen.com/",
-      countries: ["美国", "德国", "日本"],
-      languages: ["英语", "德语", "日语"],
-      platforms: ["ChatGPT", "Gemini"],
+      regions: [
+        { id: "r1", country: "美国", language: "英语" },
+        { id: "r2", country: "德国", language: "德语" },
+        { id: "r3", country: "日本", language: "日语" },
+      ],
+      platforms: ["ChatGPT"],
       intentType: "clear",
-      intentClear: "哪个品牌的扩展坞稳定好用？\n推荐一个数码配件品牌。",
+      intentQuestions: ["哪个品牌的扩展坞稳定好用？", "推荐一个数码配件品牌。"],
       intentRough: "",
       goal: "top3",
     },
   },
 ]
-
-export function goalLabel(value: string): string {
-  return OPTIMIZATION_GOALS.find((g) => g.value === value)?.label ?? "—"
-}
