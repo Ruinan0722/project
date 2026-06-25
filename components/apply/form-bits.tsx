@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { COUNTRY_LANGUAGES, COUNTRY_OPTIONS, type RegionItem } from "@/lib/geo-data"
+import { COUNTRY_OPTIONS, LANGUAGE_OPTIONS, type RegionItem } from "@/lib/geo-data"
 
 export function SectionCard({
   step,
@@ -139,11 +139,6 @@ export function RegionEditor({
   function update(id: string, patch: Partial<RegionItem>) {
     onChange(value.map((r) => (r.id === id ? { ...r, ...patch } : r)))
   }
-  function setCountry(id: string, country: string) {
-    // 切换国家后语言重置，若该国家只有一种语言则自动选中
-    const langs = COUNTRY_LANGUAGES[country] ?? []
-    update(id, { country, language: langs.length === 1 ? langs[0] : "" })
-  }
   function add() {
     onChange([...value, { id: `r${Date.now()}`, country: "", language: "" }])
   }
@@ -153,10 +148,9 @@ export function RegionEditor({
   return (
     <div className="space-y-2.5">
       {value.map((r, i) => {
-        const langs = r.country ? COUNTRY_LANGUAGES[r.country] ?? [] : []
         return (
           <div key={r.id} className="flex items-center gap-2">
-            <Select value={r.country} onValueChange={(v) => setCountry(r.id, v)}>
+            <Select value={r.country} onValueChange={(v) => update(r.id, { country: v })}>
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="选择国家或地区">{r.country || "选择国家或地区"}</SelectValue>
               </SelectTrigger>
@@ -169,12 +163,12 @@ export function RegionEditor({
               </SelectContent>
             </Select>
             <span className="shrink-0 text-sm text-muted-foreground">-</span>
-            <Select value={r.language} onValueChange={(v) => update(r.id, { language: v })} disabled={!r.country}>
+            <Select value={r.language} onValueChange={(v) => update(r.id, { language: v })}>
               <SelectTrigger className="flex-1">
-                <SelectValue placeholder={r.country ? "选择语言" : "请先选国家"}>{r.language || (r.country ? "选择语言" : "请先选国家")}</SelectValue>
+                <SelectValue placeholder="选择语言">{r.language || "选择语言"}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {langs.map((l) => (
+                {LANGUAGE_OPTIONS.map((l) => (
                   <SelectItem key={l} value={l}>
                     {l}
                   </SelectItem>

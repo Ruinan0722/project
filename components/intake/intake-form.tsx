@@ -187,10 +187,9 @@ export function IntakeForm() {
                 label="5. 希望优化的品牌名称"
                 required
                 hint="请填写希望在 ChatGPT 中提升曝光和推荐表现的品牌。"
-                example="例如：某出海消费电子品牌"
                 error={errors.brandName}
               >
-                <Input placeholder="请输入品牌名称" value={form.brandName} onChange={(e) => set("brandName", e.target.value)} />
+                <Input placeholder="例如：某出海消费电子品牌" value={form.brandName} onChange={(e) => set("brandName", e.target.value)} />
               </Field>
             </div>
             <div id="field-products">
@@ -198,7 +197,6 @@ export function IntakeForm() {
                 label="6. 希望优化的产品或服务"
                 required
                 hint="请填写本次重点优化的产品、产品线或服务，可添加多个。"
-                example="例如：AI 图片生成工具、户外储能电源、跨境物流服务"
                 error={errors.products}
               >
                 <RowList
@@ -209,7 +207,7 @@ export function IntakeForm() {
                       names.map((name, i) => ({ id: form.products[i]?.id ?? `p${Date.now()}${i}`, name })),
                     )
                   }
-                  placeholder={() => "例如：AI 图片生成工具"}
+                  placeholder={() => "例如：AI 图片生成工具、户外储能电源、跨境物流服务"}
                   addLabel="添加产品或服务"
                 />
               </Field>
@@ -272,7 +270,7 @@ export function IntakeForm() {
               <Field
                 label="10. 希望重点优化的国家与语言"
                 required
-                hint="先选择国家，再选择该国家对应的语言；可添加多组，例如：美国-英语；英国-英语。"
+                hint="选择目标国家与语言，可添加多组，例如：美国-英语；英国-英语。"
                 error={errors.regions}
               >
                 <RegionEditor value={form.regions} onChange={(v) => set("regions", v)} />
