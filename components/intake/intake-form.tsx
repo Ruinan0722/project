@@ -1,9 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { ArrowLeft, Plus, Save, Send, Sparkles, X } from "lucide-react"
+import { CheckCircle2, Copy, Plus, RotateCcw, Save, Send, Sparkles, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -16,7 +14,7 @@ import {
   emptyForm,
   type GeoFormData,
 } from "@/lib/geo-data"
-import { ChipGroup, ChoiceCard, Field, SectionCard } from "./form-bits"
+import { ChipGroup, ChoiceCard, Field, SectionCard } from "@/components/apply/form-bits"
 
 const DRAFT_KEY = "geo-form-draft"
 
@@ -25,33 +23,31 @@ type Errors = Partial<Record<string, string>>
 const PHONE_RE = /^1[3-9]\d{9}$/
 const URL_RE = /^https?:\/\/.+\..+/
 
-export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
-  const router = useRouter()
+export function IntakeForm() {
   const [form, setForm] = useState<GeoFormData>(emptyForm)
   const [errors, setErrors] = useState<Errors>({})
   const [hydrated, setHydrated] = useState(false)
+  const [submittedCode, setSubmittedCode] = useState<string | null>(null)
 
   useEffect(() => {
-    if (resumeDraft && typeof window !== "undefined") {
+    if (typeof window !== "undefined") {
       const raw = window.localStorage.getItem(DRAFT_KEY)
       if (raw) {
         try {
           setForm({ ...emptyForm(), ...JSON.parse(raw) })
-          toast.info("已载入上次保存的草稿")
         } catch {
           /* ignore */
         }
       }
     }
     setHydrated(true)
-  }, [resumeDraft])
+  }, [])
 
   function set<K extends keyof GeoFormData>(key: K, val: GeoFormData[K]) {
     setForm((f) => ({ ...f, [key]: val }))
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }))
   }
 
-  // 完成度
   const progress = useMemo(() => {
     const checks = [
       !!form.companyName,
@@ -91,10 +87,8 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
   }
 
   function saveDraft() {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
-    }
-    toast.success("草稿已保存", { description: "您可以稍后通过链接继续填写。" })
+    if (typeof window !== "undefined") window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
+    toast.success("草稿已保存", { description: "您可以稍后回到此页面继续填写。" })
   }
 
   function submit() {
@@ -106,41 +100,43 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
       document.getElementById(`field-${firstKey}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
       return
     }
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(DRAFT_KEY)
-    }
+    if (typeof window !== "undefined") window.localStorage.removeItem(DRAFT_KEY)
     const code = `GEO-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(Math.random() * 9000 + 1000)}`
-    router.push(`/apply/success?code=${code}`)
+    setSubmittedCode(code)
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  // 产品列表操作
+  function resetForm() {
+    setForm(emptyForm())
+    setErrors({})
+    setSubmittedCode(null)
+  }
+
   function addProduct() {
     set("products", [...form.products, { id: `p${Date.now()}`, name: "" }])
   }
   function updateProduct(id: string, name: string) {
-    set(
-      "products",
-      form.products.map((p) => (p.id === id ? { ...p, name } : p)),
-    )
+    set("products", form.products.map((p) => (p.id === id ? { ...p, name } : p)))
   }
   function removeProduct(id: string) {
-    set(
-      "products",
-      form.products.filter((p) => p.id !== id),
-    )
+    set("products", form.products.filter((p) => p.id !== id))
   }
 
   if (!hydrated) return null
 
+  if (submittedCode) {
+    return <SubmitSuccess code={submittedCode} onReset={resetForm} />
+  }
+
   return (
-    <div className="min-h-screen">
-      {/* 顶栏 */}
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
+    <div>
+      {/* 页内顶栏：进度 + 保存草稿 */}
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-4 px-5">
-          <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-4" />
-            返回首页
-          </Link>
+          <div>
+            <h1 className="text-base font-semibold tracking-tight">客户需求填报</h1>
+            <p className="hidden text-xs text-muted-foreground sm:block">海外 GEO 优化需求收集</p>
+          </div>
           <div className="flex flex-1 items-center justify-end gap-3">
             <div className="hidden flex-1 items-center gap-2 sm:flex">
               <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
@@ -157,13 +153,12 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
       </header>
 
       <main className="mx-auto max-w-3xl px-5 py-8 md:py-10">
-        {/* 引导说明 */}
         <div className="mb-7 rounded-2xl border border-border bg-card p-5 md:p-6">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
             <Sparkles className="size-3.5" />
             预计用时 3—5 分钟
           </span>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">海外 GEO 优化需求收集</h1>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-balance">海外 GEO 优化需求收集</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             为了更准确地了解您的业务和优化需求，请填写以下基础信息。不确定的内容可以选择“暂不清楚”，后续由项目顾问协助确认。
           </p>
@@ -173,42 +168,22 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
           {/* 模块一 */}
           <SectionCard step="一" title="项目联系人" desc="收集公司及联系人信息">
             <div id="field-companyName">
-              <Field
-                label="公司名称"
-                required
-                hint="请输入本次合作对应的公司主体。"
-                example="字节跳动有限公司"
-                error={errors.companyName}
-              >
-                <Input
-                  placeholder="请输入公司名称"
-                  value={form.companyName}
-                  onChange={(e) => set("companyName", e.target.value)}
-                />
+              <Field label="公司名称" required hint="请输入本次合作对应的公司主体。" example="字节跳动有限公司" error={errors.companyName}>
+                <Input placeholder="请输入公司名称" value={form.companyName} onChange={(e) => set("companyName", e.target.value)} />
               </Field>
             </div>
-
             <div id="field-contactName" className="grid gap-4 sm:grid-cols-3">
               <Field label="联系人姓名" required error={errors.contactName}>
                 <Input placeholder="张三" value={form.contactName} onChange={(e) => set("contactName", e.target.value)} />
               </Field>
               <div id="field-contactTitle">
                 <Field label="职位" required error={errors.contactTitle}>
-                  <Input
-                    placeholder="海外市场经理"
-                    value={form.contactTitle}
-                    onChange={(e) => set("contactTitle", e.target.value)}
-                  />
+                  <Input placeholder="海外市场经理" value={form.contactTitle} onChange={(e) => set("contactTitle", e.target.value)} />
                 </Field>
               </div>
               <div id="field-contactPhone">
                 <Field label="手机号" required error={errors.contactPhone}>
-                  <Input
-                    inputMode="tel"
-                    placeholder="13800000000"
-                    value={form.contactPhone}
-                    onChange={(e) => set("contactPhone", e.target.value)}
-                  />
+                  <Input inputMode="tel" placeholder="13800000000" value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} />
                 </Field>
               </div>
             </div>
@@ -224,14 +199,9 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
                 example="Dreamina、Anker、EcoFlow"
                 error={errors.brandName}
               >
-                <Input
-                  placeholder="请输入品牌名称"
-                  value={form.brandName}
-                  onChange={(e) => set("brandName", e.target.value)}
-                />
+                <Input placeholder="请输入品牌名称" value={form.brandName} onChange={(e) => set("brandName", e.target.value)} />
               </Field>
             </div>
-
             <div id="field-products">
               <Field
                 label="希望优化的产品或服务"
@@ -243,11 +213,7 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
                 <div className="space-y-2">
                   {form.products.map((p, i) => (
                     <div key={p.id} className="flex items-center gap-2">
-                      <Input
-                        placeholder={`例如：AI 图片生成工具`}
-                        value={p.name}
-                        onChange={(e) => updateProduct(p.id, e.target.value)}
-                      />
+                      <Input placeholder="例如：AI 图片生成工具" value={p.name} onChange={(e) => updateProduct(p.id, e.target.value)} />
                       {form.products.length > 1 && (
                         <Button
                           type="button"
@@ -269,17 +235,12 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
                 </div>
               </Field>
             </div>
-
             <div id="field-productIntro">
               <Field
                 label="请简单介绍该产品或服务"
                 required
                 hint="建议用一句话说明产品做什么、主要面向哪些用户，以及主要应用场景。"
-                example={
-                  <span>
-                    Dreamina 是一款面向设计师、内容创作者和营销人员的 AI 设计工具；设计师、产品经理等；可用于图片生成、海报设计、商品图制作。
-                  </span>
-                }
+                example="Dreamina 是一款面向设计师、内容创作者和营销人员的 AI 设计工具；可用于图片生成、海报设计、商品图制作。"
                 error={errors.productIntro}
               >
                 <Textarea
@@ -290,40 +251,18 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
                 />
               </Field>
             </div>
-
             <div id="field-hasOverseasSite">
               <Field label="是否有海外官方网站？" required error={errors.hasOverseasSite}>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <ChoiceCard
-                    selected={form.hasOverseasSite === "yes"}
-                    onSelect={() => set("hasOverseasSite", "yes")}
-                    title="有海外官网"
-                  />
-                  <ChoiceCard
-                    selected={form.hasOverseasSite === "no"}
-                    onSelect={() => set("hasOverseasSite", "no")}
-                    title="暂无海外官网"
-                  />
+                  <ChoiceCard selected={form.hasOverseasSite === "yes"} onSelect={() => set("hasOverseasSite", "yes")} title="有海外官网" />
+                  <ChoiceCard selected={form.hasOverseasSite === "no"} onSelect={() => set("hasOverseasSite", "no")} title="暂无海外官网" />
                 </div>
               </Field>
             </div>
-
-            {/* 条件展示 */}
             {form.hasOverseasSite === "yes" && (
               <div id="field-overseasSiteUrl" className="rounded-xl border border-dashed border-primary/40 bg-accent/30 p-4">
-                <Field
-                  label="海外官网地址"
-                  required
-                  hint="请输入完整的海外官网地址。"
-                  example="https://dreamina.capcut.com/"
-                  error={errors.overseasSiteUrl}
-                >
-                  <Input
-                    inputMode="url"
-                    placeholder="https://"
-                    value={form.overseasSiteUrl}
-                    onChange={(e) => set("overseasSiteUrl", e.target.value)}
-                  />
+                <Field label="海外官网地址" required hint="请输入完整的海外官网地址。" example="https://dreamina.capcut.com/" error={errors.overseasSiteUrl}>
+                  <Input inputMode="url" placeholder="https://" value={form.overseasSiteUrl} onChange={(e) => set("overseasSiteUrl", e.target.value)} />
                 </Field>
               </div>
             )}
@@ -332,16 +271,10 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
           {/* 模块三 */}
           <SectionCard step="三" title="GEO 优化需求" desc="收集国家、语言、平台、用户问题及优化目标">
             <div id="field-countries">
-              <Field
-                label="希望重点优化的国家或地区"
-                required
-                hint="支持多选。"
-                error={errors.countries}
-              >
+              <Field label="希望重点优化的国家或地区" required hint="支持多选。" error={errors.countries}>
                 <ChipGroup options={COUNTRY_OPTIONS} value={form.countries} onChange={(v) => set("countries", v)} />
               </Field>
             </div>
-
             <div id="field-languages">
               <Field
                 label="希望重点优化的语言"
@@ -362,29 +295,15 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
                 )}
               </Field>
             </div>
-
             <div id="field-platforms">
-              <Field
-                label="希望优化的 AI 平台"
-                required
-                hint="支持多选，默认已选择 ChatGPT。"
-                error={errors.platforms}
-              >
+              <Field label="希望优化的 AI 平台" required hint="支持多选，默认已选择 ChatGPT。" error={errors.platforms}>
                 <ChipGroup options={AI_PLATFORM_OPTIONS} value={form.platforms} onChange={(v) => set("platforms", v)} />
               </Field>
             </div>
-
-            <Field
-              label="您希望用户搜索什么问题时看到您的品牌？"
-              hint="此项选填，不清楚可以由项目团队协助挖掘。"
-            >
+            <Field label="您希望用户搜索什么问题时看到您的品牌？" hint="此项选填，不清楚可以由项目团队协助挖掘。">
               <div className="space-y-3">
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <ChoiceCard
-                    selected={form.intentType === "clear"}
-                    onSelect={() => set("intentType", "clear")}
-                    title="我有明确的问题"
-                  />
+                  <ChoiceCard selected={form.intentType === "clear"} onSelect={() => set("intentType", "clear")} title="我有明确的问题" />
                   <ChoiceCard
                     selected={form.intentType === "rough"}
                     onSelect={() => set("intentType", "rough")}
@@ -410,7 +329,6 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
                 )}
               </div>
             </Field>
-
             <div id="field-goal">
               <Field
                 label="您的具体优化目标"
@@ -420,20 +338,13 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
               >
                 <div className="grid gap-2 sm:grid-cols-2">
                   {OPTIMIZATION_GOALS.map((g) => (
-                    <ChoiceCard
-                      key={g.value}
-                      selected={form.goal === g.value}
-                      onSelect={() => set("goal", g.value)}
-                      title={g.label}
-                      desc={g.desc}
-                    />
+                    <ChoiceCard key={g.value} selected={form.goal === g.value} onSelect={() => set("goal", g.value)} title={g.label} desc={g.desc} />
                   ))}
                 </div>
               </Field>
             </div>
           </SectionCard>
 
-          {/* 提交说明 */}
           <div className="rounded-2xl border border-border bg-secondary/40 p-5 text-sm leading-relaxed text-muted-foreground">
             <p className="font-medium text-foreground">提交后，项目团队将基于以上信息完成：</p>
             <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
@@ -446,7 +357,6 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
             </ul>
           </div>
 
-          {/* 操作按钮 */}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button variant="outline" size="lg" className="gap-1.5" onClick={saveDraft}>
               <Save className="size-4" />
@@ -460,5 +370,40 @@ export function ApplyForm({ resumeDraft = false }: { resumeDraft?: boolean }) {
         </div>
       </main>
     </div>
+  )
+}
+
+function SubmitSuccess({ code, onReset }: { code: string; onReset: () => void }) {
+  function copyCode() {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(code)
+      toast.success("需求编号已复制")
+    }
+  }
+  return (
+    <main className="mx-auto flex min-h-[80vh] max-w-xl flex-col items-center justify-center px-5 py-12 text-center">
+      <div className="flex size-16 items-center justify-center rounded-full bg-accent text-primary">
+        <CheckCircle2 className="size-9" />
+      </div>
+      <h1 className="mt-6 text-2xl font-semibold tracking-tight text-balance">需求提交成功</h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        感谢您的填写！项目团队会尽快与您联系，并基于这份需求开展 GEO 诊断、意图挖掘与方案准备。
+      </p>
+      <div className="mt-6 w-full rounded-2xl border border-border bg-card p-5">
+        <p className="text-xs text-muted-foreground">您的需求编号</p>
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <span className="font-mono text-lg font-semibold">{code}</span>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={copyCode}>
+            <Copy className="size-3.5" />
+            复制
+          </Button>
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">请保存此编号，以便后续与项目顾问沟通时核对。</p>
+      </div>
+      <Button variant="ghost" className="mt-6 gap-1.5" onClick={onReset}>
+        <RotateCcw className="size-4" />
+        再填写一份新的需求
+      </Button>
+    </main>
   )
 }

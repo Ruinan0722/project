@@ -55,7 +55,7 @@ export function RequestDetail({ id }: { id: string }) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
         <p className="text-sm text-muted-foreground">未找到该需求记录</p>
-        <Link href="/admin">
+        <Link href="/requests">
           <Button variant="outline">返回需求列表</Button>
         </Link>
       </div>
@@ -76,7 +76,7 @@ export function RequestDetail({ id }: { id: string }) {
     <>
       {/* 顶部操作栏 */}
       <header className="border-b border-border bg-card/60 px-5 py-4 lg:px-8 print:hidden">
-        <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+        <Link href="/requests" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-4" />
           返回需求列表
         </Link>

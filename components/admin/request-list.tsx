@@ -141,7 +141,7 @@ export function RequestList() {
                   <td className="px-4 py-3 text-muted-foreground">{r.owner}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">{r.submittedAt}</td>
                   <td className="px-4 py-3 text-right">
-                    <Link href={`/admin/${r.id}`}>
+                    <Link href={`/requests/${r.id}`}>
                       <Button variant="ghost" size="sm">
                         查看
                       </Button>
@@ -156,7 +156,7 @@ export function RequestList() {
         {/* 移动端卡片 */}
         <div className="divide-y divide-border md:hidden">
           {filtered.map((r) => (
-            <Link key={r.id} href={`/admin/${r.id}`} className="block p-4 transition-colors hover:bg-accent/30">
+            <Link key={r.id} href={`/requests/${r.id}`} className="block p-4 transition-colors hover:bg-accent/30">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-medium">{r.data.companyName}</p>
