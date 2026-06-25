@@ -184,7 +184,7 @@ export function RequestDetail({ id }: { id: string }) {
               <div className="mt-3">
                 <Select value={record.status} onValueChange={(v) => updateStatus(record.id, v as RequestStatus)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>{STATUS_META[record.status].label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {STATUS_ORDER.map((s) => (
@@ -201,7 +201,7 @@ export function RequestDetail({ id }: { id: string }) {
                 <h3 className="text-sm font-semibold">跟进人</h3>
                 <Select value={record.owner} onValueChange={(v) => assignOwner(record.id, v)}>
                   <SelectTrigger className="mt-3 w-full">
-                    <SelectValue />
+                    <SelectValue>{record.owner}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {OWNERS.map((o) => (
