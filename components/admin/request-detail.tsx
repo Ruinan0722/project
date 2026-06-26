@@ -28,10 +28,12 @@ import { useAdmin } from "./store"
 import { EditDialog } from "./edit-dialog"
 import {
   STATUS_META,
+  brandDisplay,
   goalLabel,
   intentText,
   maskUrl,
   regionTags,
+  scopeLabel,
   type RequestStatus,
 } from "@/lib/geo-data"
 import { exportCsv } from "@/lib/export"
@@ -130,17 +132,24 @@ export function RequestDetail({ id }: { id: string }) {
             <DetailSection icon={Building2} title="品牌与产品信息">
               <InfoGrid
                 items={[
-                  ["品牌名称", d.brandName],
-                  ["产品或服务", d.products.map((p) => p.name).filter(Boolean).join(" / ") || "—"],
+                  ["品牌名称", brandDisplay(d)],
+                  ["本次优化范围", scopeLabel(d.scopeType)],
                 ]}
               />
-              <InfoGrid
-                items={[
-                  ["产品功能", d.productFunction],
-                  ["主要用户群体", d.productUsers],
-                  ["应用场景", d.productScenario],
-                ]}
-              />
+              {d.scopeType === "specific" && (
+                <>
+                  <InfoRow label="产品或服务">
+                    <p className="text-sm font-medium">{d.products.map((p) => p.name).filter(Boolean).join(" / ") || "—"}</p>
+                  </InfoRow>
+                  <InfoGrid
+                    items={[
+                      ["产品功能", d.productFunction],
+                      ["主要用户群体", d.productUsers],
+                      ["应用场景", d.productScenario],
+                    ]}
+                  />
+                </>
+              )}
               <InfoRow label="海外官网（已脱敏）">
                 {d.hasOverseasSite === "yes" && d.overseasSiteUrl ? (
                   <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
@@ -159,6 +168,13 @@ export function RequestDetail({ id }: { id: string }) {
               </InfoRow>
               <InfoRow label="AI 平台">
                 <TagList items={d.platforms} />
+              </InfoRow>
+              <InfoRow label="优化背景">
+                {d.optimizeBackground ? (
+                  <p className="whitespace-pre-line text-sm leading-relaxed">{d.optimizeBackground}</p>
+                ) : (
+                  <span className="text-sm text-muted-foreground">未填写</span>
+                )}
               </InfoRow>
               <InfoRow label="用户问题 / 业务方向">
                 {intent ? (

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ChoiceCard, Field, RegionEditor } from "@/components/apply/form-bits"
+import { ChoiceCard, Field, RegionEditor, RowList } from "@/components/apply/form-bits"
 import { useAdmin } from "./store"
 import {
   DEFAULT_PLATFORM,
@@ -60,9 +61,6 @@ export function EditDialog({
             <Field label="公司名称" required>
               <Input value={draft.companyName} onChange={(e) => set("companyName", e.target.value)} />
             </Field>
-            <Field label="品牌名称" required>
-              <Input value={draft.brandName} onChange={(e) => set("brandName", e.target.value)} />
-            </Field>
             <Field label="联系人姓名" required>
               <Input value={draft.contactName} onChange={(e) => set("contactName", e.target.value)} />
             </Field>
@@ -74,17 +72,58 @@ export function EditDialog({
             </Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="产品功能" required>
-              <Input value={draft.productFunction} onChange={(e) => set("productFunction", e.target.value)} />
-            </Field>
-            <Field label="主要用户群体" required>
-              <Input value={draft.productUsers} onChange={(e) => set("productUsers", e.target.value)} />
-            </Field>
-            <Field label="应用场景" required>
-              <Input value={draft.productScenario} onChange={(e) => set("productScenario", e.target.value)} />
-            </Field>
-          </div>
+          <Field label="品牌名称" required>
+            <Input value={draft.brandName} onChange={(e) => set("brandName", e.target.value)} />
+            <div className="mt-3">
+              <p className="mb-2 text-xs text-muted-foreground">品牌别名（选填）</p>
+              <RowList
+                value={draft.brandAliases}
+                onChange={(v) => set("brandAliases", v)}
+                placeholder={() => "例如：Apple"}
+                addLabel="添加别名"
+                numbered={false}
+              />
+            </div>
+          </Field>
+
+          <Field label="本次优化范围" required>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <ChoiceCard
+                selected={draft.scopeType === "brand_only"}
+                onSelect={() => set("scopeType", "brand_only")}
+                title="仅优化品牌整体"
+              />
+              <ChoiceCard
+                selected={draft.scopeType === "specific"}
+                onSelect={() => set("scopeType", "specific")}
+                title="优化具体产品或服务"
+              />
+            </div>
+          </Field>
+
+          {draft.scopeType === "specific" && (
+            <div className="rounded-xl border border-dashed border-primary/40 bg-accent/30 p-4">
+              <Field label="请简单介绍该产品或服务" required>
+                <div className="space-y-2.5">
+                  <RowList
+                    value={draft.products.map((p) => p.name)}
+                    onChange={(names) =>
+                      set(
+                        "products",
+                        names.map((name, i) => ({ id: draft.products[i]?.id ?? `p${Date.now()}${i}`, name })),
+                      )
+                    }
+                    placeholder={() => "产品或服务名称"}
+                    addLabel="添加产品或服务"
+                    numbered={false}
+                  />
+                  <Input placeholder="① 产品功能" value={draft.productFunction} onChange={(e) => set("productFunction", e.target.value)} />
+                  <Input placeholder="② 主要用户群体" value={draft.productUsers} onChange={(e) => set("productUsers", e.target.value)} />
+                  <Input placeholder="③ 应用场景" value={draft.productScenario} onChange={(e) => set("productScenario", e.target.value)} />
+                </div>
+              </Field>
+            </div>
+          )}
 
           <Field label="是否有海外官网" required>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -105,6 +144,14 @@ export function EditDialog({
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3.5 py-1.5 text-sm text-primary-foreground">
               {DEFAULT_PLATFORM}
             </div>
+          </Field>
+          <Field label="优化背景">
+            <Textarea
+              rows={3}
+              placeholder="是否有营销规划 / 排期？如有可以自定义填写"
+              value={draft.optimizeBackground}
+              onChange={(e) => set("optimizeBackground", e.target.value)}
+            />
           </Field>
           <Field label="具体优化目标" required>
             <div className="grid gap-2 sm:grid-cols-2">

@@ -41,20 +41,26 @@ export function IntakeForm() {
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }))
   }
 
+  const productComplete =
+    form.products.some((p) => p.name.trim()) &&
+    !!form.productFunction &&
+    !!form.productUsers &&
+    !!form.productScenario
+
   const progress = useMemo(() => {
     const checks = [
       !!form.companyName,
       !!form.contactName && !!form.contactTitle && !!form.contactPhone,
       !!form.brandName,
-      form.products.some((p) => p.name.trim()),
-      !!form.productFunction && !!form.productUsers && !!form.productScenario,
+      !!form.scopeType,
+      form.scopeType !== "specific" || productComplete,
       form.hasOverseasSite === "no" || (form.hasOverseasSite === "yes" && !!form.overseasSiteUrl),
       form.regions.some((r) => r.country && r.language),
       form.platforms.length > 0,
       !!form.goal,
     ]
     return Math.round((checks.filter(Boolean).length / checks.length) * 100)
-  }, [form])
+  }, [form, productComplete])
 
   function validate(): Errors {
     const e: Errors = {}
@@ -64,9 +70,9 @@ export function IntakeForm() {
     if (!form.contactPhone.trim()) e.contactPhone = "请填写手机号"
     else if (!PHONE_RE.test(form.contactPhone.trim())) e.contactPhone = "手机号格式不正确"
     if (!form.brandName.trim()) e.brandName = "请填写品牌名称"
-    if (!form.products.some((p) => p.name.trim())) e.products = "请至少填写一个产品或服务"
-    if (!form.productFunction.trim() || !form.productUsers.trim() || !form.productScenario.trim())
-      e.productIntro = "请完整填写产品功能、用户群体与应用场景"
+    if (!form.scopeType) e.scopeType = "请选择本次优化范围"
+    if (form.scopeType === "specific" && !productComplete)
+      e.product = "请填写产品或服务名称，并完整说明功能、用户群体与应用场景"
     if (!form.hasOverseasSite) e.hasOverseasSite = "请选择是否有海外官网"
     if (form.hasOverseasSite === "yes") {
       if (!form.overseasSiteUrl.trim()) e.overseasSiteUrl = "请填写海外官网地址"
@@ -101,16 +107,6 @@ export function IntakeForm() {
     setForm(emptyForm())
     setErrors({})
     setSubmittedCode(null)
-  }
-
-  function addProduct() {
-    set("products", [...form.products, { id: `p${Date.now()}`, name: "" }])
-  }
-  function updateProduct(id: string, name: string) {
-    set("products", form.products.map((p) => (p.id === id ? { ...p, name } : p)))
-  }
-  function removeProduct(id: string) {
-    set("products", form.products.filter((p) => p.id !== id))
   }
 
   if (!hydrated) return null
@@ -151,7 +147,7 @@ export function IntakeForm() {
           </span>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-balance">海外 GEO 优化需求收集</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            为了更准确地了解您的业务和优化需求，请填写以下基础信息。不确定的内容可以选择“暂不清楚”，后续由项目顾问协助确认。
+            为了更准确地了解您的业务和优化需求，请填写以下基础信息。带 <span className="text-destructive">*</span> 为必填项，其余可稍后由项目顾问协助补充。
           </p>
         </div>
 
@@ -159,85 +155,114 @@ export function IntakeForm() {
           {/* 模块一 */}
           <SectionCard step="一" title="项目联系人" desc="收集公司及联系人信息">
             <div id="field-companyName">
-              <Field label="1. 公司名称" required hint="请输入本次合作对应的公司主体。" example="字节跳动有限公司" error={errors.companyName}>
-                <Input placeholder="请输入公司名称" value={form.companyName} onChange={(e) => set("companyName", e.target.value)} />
+              <Field label="1. 公司名称" required hint="请填写本次合作对应的公司主体。" error={errors.companyName}>
+                <Input
+                  placeholder="例如：字节跳动有限公司"
+                  value={form.companyName}
+                  onChange={(e) => set("companyName", e.target.value)}
+                />
               </Field>
             </div>
             <div id="field-contactName" className="grid gap-4 sm:grid-cols-3">
               <Field label="2. 联系人姓名" required error={errors.contactName}>
-                <Input placeholder="张三" value={form.contactName} onChange={(e) => set("contactName", e.target.value)} />
+                <Input placeholder="例如：张三" value={form.contactName} onChange={(e) => set("contactName", e.target.value)} />
               </Field>
               <div id="field-contactTitle">
                 <Field label="3. 职位" required error={errors.contactTitle}>
-                  <Input placeholder="海外市场经理" value={form.contactTitle} onChange={(e) => set("contactTitle", e.target.value)} />
+                  <Input placeholder="例如：海外市场经理" value={form.contactTitle} onChange={(e) => set("contactTitle", e.target.value)} />
                 </Field>
               </div>
               <div id="field-contactPhone">
                 <Field label="4. 手机号" required error={errors.contactPhone}>
-                  <Input inputMode="tel" placeholder="13800000000" value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} />
+                  <Input inputMode="tel" placeholder="例如：13800000000" value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} />
                 </Field>
               </div>
             </div>
           </SectionCard>
 
           {/* 模块二 */}
-          <SectionCard step="二" title="品牌与产品信息" desc="收集品牌、产品、介绍及官网信息">
+          <SectionCard step="二" title="品牌与产品信息" desc="收集品牌、优化范围、产品介绍及官网信息">
             <div id="field-brandName">
               <Field
                 label="5. 希望优化的品牌名称"
                 required
-                hint="请填写希望在 ChatGPT 中提升曝光和推荐表现的品牌。"
+                hint="请填写希望在 ChatGPT 中提升曝光和推荐表现的品牌；如有多个常用叫法，可补充别名。"
                 error={errors.brandName}
               >
-                <Input placeholder="例如：某出海消费电子品牌" value={form.brandName} onChange={(e) => set("brandName", e.target.value)} />
-              </Field>
-            </div>
-            <div id="field-products">
-              <Field
-                label="6. 希望优化的产品或服务"
-                required
-                hint="请填写本次重点优化的产品、产品线或服务，可添加多个。"
-                error={errors.products}
-              >
-                <RowList
-                  value={form.products.map((p) => p.name)}
-                  onChange={(names) =>
-                    set(
-                      "products",
-                      names.map((name, i) => ({ id: form.products[i]?.id ?? `p${Date.now()}${i}`, name })),
-                    )
-                  }
-                  placeholder={() => "例如：AI 图片生成工具、户外储能电源、跨境物流服务"}
-                  addLabel="添加产品或服务"
-                />
-              </Field>
-            </div>
-            <div id="field-productIntro">
-              <Field
-                label="7. 请简单介绍该产品或服务"
-                required
-                hint="请分别填写以下三项，便于我们快速理解您的业务。"
-                error={errors.productIntro}
-              >
-                <div className="space-y-2.5">
-                  <Input
-                    placeholder="1. 请简单说明产品功能"
-                    value={form.productFunction}
-                    onChange={(e) => set("productFunction", e.target.value)}
-                  />
-                  <Input
-                    placeholder="2. 主要用户是哪些群体"
-                    value={form.productUsers}
-                    onChange={(e) => set("productUsers", e.target.value)}
-                  />
-                  <Input
-                    placeholder="3. 应用场景"
-                    value={form.productScenario}
-                    onChange={(e) => set("productScenario", e.target.value)}
+                <Input placeholder="例如：苹果" value={form.brandName} onChange={(e) => set("brandName", e.target.value)} />
+                <div className="mt-3">
+                  <p className="mb-2 text-xs leading-relaxed text-muted-foreground">品牌别名（选填）：同一品牌的其他叫法，如「苹果」别名「Apple」。</p>
+                  <RowList
+                    value={form.brandAliases}
+                    onChange={(v) => set("brandAliases", v)}
+                    placeholder={() => "例如：Apple"}
+                    addLabel="添加别名"
+                    numbered={false}
                   />
                 </div>
               </Field>
             </div>
+
+            <div id="field-scopeType">
+              <Field label="6. 本次优化范围" required hint="请选择本次希望优化的范围。" error={errors.scopeType}>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <ChoiceCard
+                    selected={form.scopeType === "brand_only"}
+                    onSelect={() => set("scopeType", "brand_only")}
+                    title="仅优化品牌整体"
+                    desc="只针对品牌名称做整体优化"
+                  />
+                  <ChoiceCard
+                    selected={form.scopeType === "specific"}
+                    onSelect={() => set("scopeType", "specific")}
+                    title="优化具体产品或服务"
+                    desc="针对具体的产品或服务做优化"
+                  />
+                </div>
+              </Field>
+            </div>
+
+            {form.scopeType === "specific" && (
+              <div id="field-product" className="rounded-xl border border-dashed border-primary/40 bg-accent/30 p-4">
+                <Field
+                  label="7. 请简单介绍该产品或服务"
+                  required
+                  hint="请填写产品或服务名称，并分别说明以下三项，便于我们快速理解您的业务。"
+                  error={errors.product}
+                >
+                  <div className="space-y-2.5">
+                    <RowList
+                      value={form.products.map((p) => p.name)}
+                      onChange={(names) =>
+                        set(
+                          "products",
+                          names.map((name, i) => ({ id: form.products[i]?.id ?? `p${Date.now()}${i}`, name })),
+                        )
+                      }
+                      placeholder={() => "产品或服务名称，例如：AI 图片生成工具"}
+                      addLabel="添加产品或服务"
+                      numbered={false}
+                    />
+                    <Input
+                      placeholder="① 产品功能，例如：帮助用户一键生成营销海报的 AI 设计工具"
+                      value={form.productFunction}
+                      onChange={(e) => set("productFunction", e.target.value)}
+                    />
+                    <Input
+                      placeholder="② 主要用户群体，例如：中小电商卖家、内容创作者、设计师"
+                      value={form.productUsers}
+                      onChange={(e) => set("productUsers", e.target.value)}
+                    />
+                    <Input
+                      placeholder="③ 应用场景，例如：电商主图制作、社媒配图、广告创意生成"
+                      value={form.productScenario}
+                      onChange={(e) => set("productScenario", e.target.value)}
+                    />
+                  </div>
+                </Field>
+              </div>
+            )}
+
             <div id="field-hasOverseasSite">
               <Field label="8. 是否有海外官方网站？" required error={errors.hasOverseasSite}>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -248,13 +273,13 @@ export function IntakeForm() {
             </div>
             {form.hasOverseasSite === "yes" && (
               <div id="field-overseasSiteUrl" className="rounded-xl border border-dashed border-primary/40 bg-accent/30 p-4">
-                <Field
-                  label="9. 海外官网地址"
-                  required
-                  hint="请输入完整的海外官网地址。"
-                  error={errors.overseasSiteUrl}
-                >
-                  <Input inputMode="url" placeholder="https://" value={form.overseasSiteUrl} onChange={(e) => set("overseasSiteUrl", e.target.value)} />
+                <Field label="9. 海外官网地址" required hint="请输入完整的海外官网地址。" error={errors.overseasSiteUrl}>
+                  <Input
+                    inputMode="url"
+                    placeholder="例如：https://www.example.com"
+                    value={form.overseasSiteUrl}
+                    onChange={(e) => set("overseasSiteUrl", e.target.value)}
+                  />
                   <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Lock className="size-3.5 text-primary" />
                     出于品牌保密考虑，网址在系统中将以脱敏方式存储与展示。
@@ -265,7 +290,7 @@ export function IntakeForm() {
           </SectionCard>
 
           {/* 模块三 */}
-          <SectionCard step="三" title="GEO 优化需求" desc="收集国家语言、平台、用户问题及优化目标">
+          <SectionCard step="三" title="GEO 优化需求" desc="收集国家语言、平台、优化背景、用户问题及优化目标">
             <div id="field-regions">
               <Field
                 label="10. 希望重点优化的国家与语言"
@@ -284,7 +309,15 @@ export function IntakeForm() {
                 </div>
               </Field>
             </div>
-            <Field label="12. 您希望用户搜索什么问题时看到您的品牌？" hint="此项选填，不清楚可以由项目团队协助挖掘。">
+            <Field label="12. 优化背景" hint="帮助我们更好地匹配优化节奏，此项选填。">
+              <Textarea
+                rows={3}
+                placeholder="是否有营销规划 / 排期？如有可以自定义填写"
+                value={form.optimizeBackground}
+                onChange={(e) => set("optimizeBackground", e.target.value)}
+              />
+            </Field>
+            <Field label="13. 您希望用户搜索什么问题时看到您的品牌？" hint="此项选填，不清楚可以由项目团队协助挖掘。">
               <div className="space-y-3">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <ChoiceCard selected={form.intentType === "clear"} onSelect={() => set("intentType", "clear")} title="我有明确的问题" desc="可填写多个，一个问题一行" />
@@ -315,7 +348,7 @@ export function IntakeForm() {
             </Field>
             <div id="field-goal">
               <Field
-                label="13. 您的具体优化目标"
+                label="14. 您的具体优化目标"
                 required
                 hint="请选择本次项目的核心考核指标，四选一。最终目标及考核规则将以双方确认的 SOW 为准。"
                 error={errors.goal}

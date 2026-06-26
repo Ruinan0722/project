@@ -48,10 +48,10 @@ export const AI_PLATFORM_OPTIONS = ["ChatGPT"]
 export const DEFAULT_PLATFORM = "ChatGPT"
 
 export const OPTIMIZATION_GOALS = [
-  { value: "source", label: "来源率 ≥ 30%", desc: "品牌官网/内容被 AI 引用作为信息来源的比例" },
-  { value: "recommend", label: "推荐率 ≥ 30%", desc: "AI 回答中提及或推荐该品牌的比例" },
-  { value: "top3", label: "前三推荐率 ≥ 30%", desc: "品牌出现在 AI 推荐前三位的比例" },
-  { value: "priority", label: "优先推荐率 ≥ 30%", desc: "品牌被作为首选推荐的比例" },
+  { value: "source", label: "来源率", desc: "品牌官网/内容被 AI 引用作为信息来源的比例" },
+  { value: "recommend", label: "推荐率", desc: "AI 回答中提及或推荐该品牌的比例" },
+  { value: "top3", label: "前三推荐率", desc: "品牌出现在 AI 推荐前三位的比例" },
+  { value: "priority", label: "优先推荐率", desc: "品牌被作为首选推荐的比例" },
 ] as const
 
 // ===== 表单数据结构 =====
@@ -76,6 +76,8 @@ export interface GeoFormData {
   contactPhone: string
   // 二、品牌与产品信息
   brandName: string
+  brandAliases: string[] // 品牌别名（如 苹果 / Apple）
+  scopeType: "brand_only" | "specific" | "" // 本次优化范围
   products: ProductItem[]
   productFunction: string // 产品功能
   productUsers: string // 主要用户群体
@@ -85,6 +87,7 @@ export interface GeoFormData {
   // 三、GEO 优化需求
   regions: RegionItem[] // 国家-语言对
   platforms: string[] // 当前固定为 ChatGPT
+  optimizeBackground: string // 优化背景（选填）
   intentType: "clear" | "rough" | ""
   intentQuestions: string[] // 明确的问题，一行一个
   intentRough: string
@@ -98,6 +101,8 @@ export function emptyForm(): GeoFormData {
     contactTitle: "",
     contactPhone: "",
     brandName: "",
+    brandAliases: [""],
+    scopeType: "",
     products: [{ id: "p1", name: "" }],
     productFunction: "",
     productUsers: "",
@@ -106,6 +111,7 @@ export function emptyForm(): GeoFormData {
     overseasSiteUrl: "",
     regions: [{ id: "r1", country: "", language: "" }],
     platforms: [DEFAULT_PLATFORM],
+    optimizeBackground: "",
     intentType: "",
     intentQuestions: [""],
     intentRough: "",
@@ -117,6 +123,19 @@ export function emptyForm(): GeoFormData {
 
 export function goalLabel(value: string): string {
   return OPTIMIZATION_GOALS.find((g) => g.value === value)?.label ?? "—"
+}
+
+export function scopeLabel(value: GeoFormData["scopeType"]): string {
+  if (value === "brand_only") return "仅优化品牌整体"
+  if (value === "specific") return "优化具体产品或服务"
+  return "—"
+}
+
+// 品牌别名展示：苹果（Apple、iPhone）
+export function brandDisplay(d: GeoFormData): string {
+  const aliases = d.brandAliases.filter((a) => a.trim())
+  if (!d.brandName) return "—"
+  return aliases.length ? `${d.brandName}（别名：${aliases.join("、")}）` : d.brandName
 }
 
 // 国家-语言对展示：美国-英语；英国-英语
@@ -203,6 +222,9 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactTitle: "海外市场经理",
       contactPhone: "13800000000",
       brandName: "Dreamina",
+      brandAliases: ["即梦"],
+      scopeType: "specific",
+      optimizeBackground: "下半年有海外社媒投放排期，希望配合营销节奏提升 AI 推荐表现。",
       products: [{ id: "p1", name: "AI 图片生成工具" }, { id: "p2", name: "AI 海报设计" }],
       productFunction: "提供 AI 图片生成、海报设计与商品图制作能力",
       productUsers: "设计师、内容创作者、营销人员",
@@ -239,6 +261,9 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactTitle: "品牌负责人",
       contactPhone: "13911112222",
       brandName: "Anker",
+      brandAliases: ["安克"],
+      scopeType: "specific",
+      optimizeBackground: "",
       products: [{ id: "p1", name: "充电宝" }, { id: "p2", name: "氮化镓充电器" }],
       productFunction: "提供移动充电与快充电源解决方案",
       productUsers: "数码爱好者与差旅人群",
@@ -264,13 +289,16 @@ export const MOCK_REQUESTS: RequestRecord[] = [
     submittedAt: "2026-06-18 09:12",
     updatedAt: "2026-06-19 11:20",
     owner: "陈商务",
-    notes: [{ id: "n1", author: "陈商务", content: "缺少目标语言，已联系客户补充。", createdAt: "2026-06-19 11:20" }],
+    notes: [{ id: "n1", author: "陈商务", content: "缺少目标语言，已���系客户补充。", createdAt: "2026-06-19 11:20" }],
     data: {
       companyName: "正浩创新科技股份有限公司",
       contactName: "刘强",
       contactTitle: "海外业务总监",
       contactPhone: "13722223333",
       brandName: "EcoFlow",
+      brandAliases: ["正浩"],
+      scopeType: "specific",
+      optimizeBackground: "",
       products: [{ id: "p1", name: "户外储能电源" }],
       productFunction: "提供便携储能与户外电源解决方案",
       productUsers: "露营、房车及应急用电人群",
@@ -303,6 +331,9 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactTitle: "增长营销经理",
       contactPhone: "13633334444",
       brandName: "SHEIN",
+      brandAliases: ["希音"],
+      scopeType: "specific",
+      optimizeBackground: "大促前希望快速放量，配合站内活动排期。",
       products: [{ id: "p1", name: "跨境快时尚服饰" }, { id: "p2", name: "美妆个护" }],
       productFunction: "提供跨境快时尚服饰与美妆个护商品",
       productUsers: "年轻女性消费者",
@@ -336,6 +367,9 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactTitle: "市场专员",
       contactPhone: "13544445555",
       brandName: "Aukey",
+      brandAliases: [""],
+      scopeType: "",
+      optimizeBackground: "",
       products: [{ id: "p1", name: "" }],
       productFunction: "",
       productUsers: "",
@@ -364,6 +398,9 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactTitle: "发行负责人",
       contactPhone: "13455556666",
       brandName: "PlayX",
+      brandAliases: [""],
+      scopeType: "brand_only",
+      optimizeBackground: "",
       products: [{ id: "p1", name: "休闲手游" }],
       productFunction: "面向全球休闲玩家的手游产品",
       productUsers: "全球休闲玩家",
@@ -395,6 +432,9 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       contactTitle: "海外市场总监",
       contactPhone: "13366667777",
       brandName: "UGREEN",
+      brandAliases: ["绿联"],
+      scopeType: "specific",
+      optimizeBackground: "",
       products: [{ id: "p1", name: "数码配件" }, { id: "p2", name: "扩展坞" }],
       productFunction: "提供数码连接与扩展配件",
       productUsers: "数码用户与办公人群",

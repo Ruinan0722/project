@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { AlertCircle, Check, Lightbulb, Plus, X } from "lucide-react"
+import { AlertCircle, Check, Plus, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -39,14 +39,12 @@ export function Field({
   label,
   required,
   hint,
-  example,
   error,
   children,
 }: {
   label: string
   required?: boolean
   hint?: string
-  example?: ReactNode
   error?: string
   children: ReactNode
 }) {
@@ -62,15 +60,6 @@ export function Field({
       </label>
       {hint && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
       <div className="mt-2.5">{children}</div>
-      {example && (
-        <div className="mt-2 flex gap-1.5 rounded-lg bg-secondary/60 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-          <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
-          <div className="min-w-0">
-            <span className="font-medium text-foreground/70">示例：</span>
-            {example}
-          </div>
-        </div>
-      )}
       {error && (
         <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
           <AlertCircle className="size-3.5" />
@@ -204,11 +193,13 @@ export function RowList({
   onChange,
   placeholder,
   addLabel = "添加一行",
+  numbered = true,
 }: {
   value: string[]
   onChange: (next: string[]) => void
   placeholder?: (index: number) => string
   addLabel?: string
+  numbered?: boolean
 }) {
   function update(i: number, val: string) {
     onChange(value.map((v, idx) => (idx === i ? val : v)))
@@ -223,7 +214,9 @@ export function RowList({
     <div className="space-y-2">
       {value.map((v, i) => (
         <div key={i} className="flex items-center gap-2">
-          <span className="w-5 shrink-0 text-right text-sm tabular-nums text-muted-foreground">{i + 1}.</span>
+          {numbered && (
+            <span className="w-5 shrink-0 text-right text-sm tabular-nums text-muted-foreground">{i + 1}.</span>
+          )}
           <Input placeholder={placeholder?.(i)} value={v} onChange={(e) => update(i, e.target.value)} />
           {value.length > 1 && (
             <Button
