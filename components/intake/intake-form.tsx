@@ -159,19 +159,25 @@ export function IntakeForm() {
                 />
               </Field>
             </div>
-            <div id="field-contactName" className="grid gap-4 sm:grid-cols-3">
-              <Field label="2. 联系人姓名" required error={errors.contactName}>
-                <Input placeholder="例如：张三" value={form.contactName} onChange={(e) => set("contactName", e.target.value)} />
-              </Field>
-              <div id="field-contactTitle">
-                <Field label="3. 职位" required error={errors.contactTitle}>
-                  <Input placeholder="例如：海外市场经理" value={form.contactTitle} onChange={(e) => set("contactTitle", e.target.value)} />
+            <div id="field-contactName">
+              <p className="flex items-center gap-1.5 text-sm font-medium">
+                2. 联系人信息<span className="text-destructive">*</span>
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">请填写本次对接的联系人姓名、职位与手机号。</p>
+              <div className="mt-2.5 grid gap-4 sm:grid-cols-3">
+                <Field label="联系人姓名" required error={errors.contactName}>
+                  <Input placeholder="例如：张三" value={form.contactName} onChange={(e) => set("contactName", e.target.value)} />
                 </Field>
-              </div>
-              <div id="field-contactPhone">
-                <Field label="4. 手机号" required error={errors.contactPhone}>
-                  <Input inputMode="tel" placeholder="例如：13800000000" value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} />
-                </Field>
+                <div id="field-contactTitle">
+                  <Field label="职位" required error={errors.contactTitle}>
+                    <Input placeholder="例如：海外市场经理" value={form.contactTitle} onChange={(e) => set("contactTitle", e.target.value)} />
+                  </Field>
+                </div>
+                <div id="field-contactPhone">
+                  <Field label="手机号" required error={errors.contactPhone}>
+                    <Input inputMode="tel" placeholder="例如：13800000000" value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} />
+                  </Field>
+                </div>
               </div>
             </div>
           </SectionCard>
@@ -180,7 +186,7 @@ export function IntakeForm() {
           <SectionCard step="二" title="品牌与产品信息" desc="收集品牌、优化范围、产品介绍及官网信息">
             <div id="field-brandName">
               <Field
-                label="5. 希望优化的品牌名称"
+                label="3. 希望优化的品牌名称"
                 required
                 hint="请填写希望在 ChatGPT 中提升曝光和推荐表现的品牌；如有多个常用叫法，可补充别名。"
                 error={errors.brandName}
@@ -200,7 +206,7 @@ export function IntakeForm() {
             </div>
 
             <div id="field-scopeType">
-              <Field label="6. 本次优化范围" required hint="请选择本次希望优化的范围。" error={errors.scopeType}>
+              <Field label="4. 本次优化范围" required hint="请选择本次希望优化的范围。" error={errors.scopeType}>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <ChoiceCard
                     selected={form.scopeType === "brand_only"}
@@ -232,7 +238,7 @@ export function IntakeForm() {
             )}
 
             <div id="field-hasOverseasSite">
-              <Field label="7. 是否有海外官方网站？" required error={errors.hasOverseasSite}>
+              <Field label="5. 是否有海外官方网站？" required error={errors.hasOverseasSite}>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <ChoiceCard selected={form.hasOverseasSite === "yes"} onSelect={() => set("hasOverseasSite", "yes")} title="有海外官网" />
                   <ChoiceCard selected={form.hasOverseasSite === "no"} onSelect={() => set("hasOverseasSite", "no")} title="暂无海外官网" />
@@ -261,7 +267,7 @@ export function IntakeForm() {
           <SectionCard step="三" title="GEO 优化需求" desc="收集国家语言、平台、优化背景、用户问题及优化目标">
             <div id="field-regions">
               <Field
-                label="8. 希望重点优化的国家与语言"
+                label="6. 希望重点优化的国家与语言"
                 required
                 hint="选择目标国家与语言，可添加多组，例如：美国-英语；英国-英语。"
                 error={errors.regions}
@@ -270,14 +276,14 @@ export function IntakeForm() {
               </Field>
             </div>
             <div id="field-platforms">
-              <Field label="9. 希望优化的 AI 平台" required hint="当前仅支持 ChatGPT，已默认选中。">
+              <Field label="7. 希望优化的 AI 平台" required hint="当前仅支持 ChatGPT，已默认选中。">
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3.5 py-1.5 text-sm text-primary-foreground">
                   <CheckCircle2 className="size-3.5" />
                   {DEFAULT_PLATFORM}
                 </div>
               </Field>
             </div>
-            <Field label="10. 优化背景" hint="帮助我们更好地匹配优化节奏，此项选填。">
+            <Field label="8. 优化背景" hint="帮助我们更好地匹配优化节奏，此项选填。">
               <Textarea
                 rows={3}
                 placeholder="是否有营销规划 / 排期？如有可以自定义填写"
@@ -285,7 +291,7 @@ export function IntakeForm() {
                 onChange={(e) => set("optimizeBackground", e.target.value)}
               />
             </Field>
-            <Field label="11. 您希望用户搜索什么问题时看到您的品牌？" hint="此项选填，不清楚可以由项目团队协助挖掘。">
+            <Field label="9. 您希望用户搜索什么问题时看到您的品牌？" hint="此项选填，不清楚可以由项目团队协助挖掘。">
               <div className="space-y-3">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <ChoiceCard selected={form.intentType === "clear"} onSelect={() => set("intentType", "clear")} title="我有明确的问题" desc="可填写多个，一个问题一行" />
@@ -316,7 +322,7 @@ export function IntakeForm() {
             </Field>
             <div id="field-goal">
               <Field
-                label="12. 您的具体优化目标"
+                label="10. 您的具体优化目标"
                 required
                 hint="请选择本次项目的核心考核指标，四选一。最终目标及考核规则将以双方确认的 SOW 为准。"
                 error={errors.goal}
