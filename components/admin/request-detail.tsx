@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import {
   ArrowLeft,
+  ArrowRight,
   Building2,
   Download,
   FileSpreadsheet,
@@ -27,6 +28,7 @@ import { StatusBadge } from "@/components/status-badge"
 import { useAdmin } from "./store"
 import { EditDialog } from "./edit-dialog"
 import {
+  STATUS_ACTIONS,
   STATUS_META,
   brandDisplay,
   goalLabel,
@@ -214,7 +216,21 @@ export function RequestDetail({ id }: { id: string }) {
           <div className="space-y-6 print:hidden">
             <div className="rounded-2xl border border-border bg-card p-5">
               <h3 className="text-sm font-semibold">处理状态</h3>
+              {STATUS_ACTIONS[record.status] && (
+                <Button
+                  className="mt-3 w-full gap-1.5"
+                  onClick={() => {
+                    const action = STATUS_ACTIONS[record.status]!
+                    updateStatus(record.id, action.next)
+                    toast.success(`状态已更新为「${STATUS_META[action.next].label}」`)
+                  }}
+                >
+                  {STATUS_ACTIONS[record.status]!.label}
+                  <ArrowRight className="size-4" />
+                </Button>
+              )}
               <div className="mt-3">
+                <p className="mb-1.5 text-xs text-muted-foreground">或手动调整状态</p>
                 <Select value={record.status} onValueChange={(v) => updateStatus(record.id, v as RequestStatus)}>
                   <SelectTrigger className="w-full">
                     <SelectValue>{STATUS_META[record.status].label}</SelectValue>

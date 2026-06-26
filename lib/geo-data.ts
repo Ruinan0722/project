@@ -22,6 +22,13 @@ export const STATUS_META: Record<
   closed: { label: "已关闭", description: "需求取消或不再继续跟进", tone: "neutral" },
 }
 
+// 销售在需求管理中的状态流转动作：当前状态 -> 下一步操作
+export const STATUS_ACTIONS: Partial<Record<RequestStatus, { label: string; next: RequestStatus }>> = {
+  submitted: { label: "确认收到", next: "pending_review" },
+  pending_review: { label: "确认需求", next: "confirmed" },
+  confirmed: { label: "转入项目", next: "in_project" },
+}
+
 // ===== 表单基础选项配置 =====
 
 // 国家是语言的上一级：每个国家对应可选语言
@@ -242,7 +249,7 @@ export const MOCK_REQUESTS: RequestRecord[] = [
           name: "AI 图片生成工具",
           fn: "通过文本描述快速生成高质量图片",
           users: "设计师、内容创作者",
-          scenario: "商品图制作、创意内容生成",
+          scenario: "商品图制作、创��内容生成",
         },
         {
           id: "p2",

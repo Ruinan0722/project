@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { StatusBadge } from "@/components/status-badge"
 import { useAdmin } from "./store"
-import { STATUS_META, goalLabel, regionLabel, type RequestStatus } from "@/lib/geo-data"
+import { STATUS_ACTIONS, STATUS_META, goalLabel, regionLabel, type RequestStatus } from "@/lib/geo-data"
+import { ArrowRight } from "lucide-react"
 import { exportCsv } from "@/lib/export"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -24,9 +25,16 @@ const STATUS_FILTERS: { value: RequestStatus | "all"; label: string }[] = [
 const VISIBLE_STATUSES: RequestStatus[] = ["submitted", "pending_review", "confirmed", "in_project"]
 
 export function RequestList() {
-  const { requests } = useAdmin()
+  const { requests, updateStatus } = useAdmin()
   const [keyword, setKeyword] = useState("")
   const [status, setStatus] = useState<RequestStatus | "all">("all")
+
+  function advanceStatus(id: string, current: RequestStatus) {
+    const action = STATUS_ACTIONS[current]
+    if (!action) return
+    updateStatus(id, action.next)
+    toast.success(`状态已更新为「${STATUS_META[action.next].label}」`)
+  }
 
   // 仅展示内部人员可见的状态：已提交、待确认、已确认、已转入项目
   const visibleRequests = useMemo(
@@ -147,12 +155,24 @@ export function RequestList() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{r.owner}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">{r.submittedAt}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Link href={`/requests/${r.id}`}>
-                      <Button variant="ghost" size="sm">
-                        查看
-                      </Button>
-                    </Link>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {STATUS_ACTIONS[r.status] && (
+                        <Button
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => advanceStatus(r.id, r.status)}
+                        >
+                          {STATUS_ACTIONS[r.status]!.label}
+                          <ArrowRight className="size-3.5" />
+                        </Button>
+                      )}
+                      <Link href={`/requests/${r.id}`}>
+                        <Button variant="ghost" size="sm">
+                          查看
+                        </Button>
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -163,19 +183,31 @@ export function RequestList() {
         {/* 移动端卡片 */}
         <div className="divide-y divide-border md:hidden">
           {filtered.map((r) => (
-            <Link key={r.id} href={`/requests/${r.id}`} className="block p-4 transition-colors hover:bg-accent/30">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-medium">{r.data.companyName}</p>
-                  <p className="text-xs text-muted-foreground">{r.data.brandName}</p>
+            <div key={r.id} className="p-4">
+              <Link href={`/requests/${r.id}`} className="block transition-colors hover:opacity-80">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{r.data.companyName}</p>
+                    <p className="text-xs text-muted-foreground">{r.data.brandName}</p>
+                  </div>
+                  <StatusBadge status={r.status} />
                 </div>
-                <StatusBadge status={r.status} />
-              </div>
-              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                <span className="font-mono">{r.code}</span>
-                <span>{r.submittedAt}</span>
-              </div>
-            </Link>
+                <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="font-mono">{r.code}</span>
+                  <span>{r.submittedAt}</span>
+                </div>
+              </Link>
+              {STATUS_ACTIONS[r.status] && (
+                <Button
+                  size="sm"
+                  className="mt-3 w-full gap-1"
+                  onClick={() => advanceStatus(r.id, r.status)}
+                >
+                  {STATUS_ACTIONS[r.status]!.label}
+                  <ArrowRight className="size-3.5" />
+                </Button>
+              )}
+            </div>
           ))}
         </div>
 

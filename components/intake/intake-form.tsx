@@ -241,7 +241,7 @@ export function IntakeForm() {
             </div>
             {form.hasOverseasSite === "yes" && (
               <div id="field-overseasSiteUrl" className="rounded-xl border border-dashed border-primary/40 bg-accent/30 p-4">
-                <Field label="8. 海外官网地址" required hint="请输入完整的海外官网地址。" error={errors.overseasSiteUrl}>
+                <Field label="海外官网地址" required hint="请输入完整的海外官网地址。" error={errors.overseasSiteUrl}>
                   <Input
                     inputMode="url"
                     placeholder="例如：https://www.example.com"
@@ -261,7 +261,7 @@ export function IntakeForm() {
           <SectionCard step="三" title="GEO 优化需求" desc="收集国家语言、平台、优化背景、用户问题及优化目标">
             <div id="field-regions">
               <Field
-                label="9. 希望重点优化的国家与语言"
+                label="8. 希望重点优化的国家与语言"
                 required
                 hint="选择目标国家与语言，可添加多组，例如：美国-英语；英国-英语。"
                 error={errors.regions}
@@ -270,14 +270,14 @@ export function IntakeForm() {
               </Field>
             </div>
             <div id="field-platforms">
-              <Field label="10. 希望优化的 AI 平台" required hint="当前仅支持 ChatGPT，已默认选中。">
+              <Field label="9. 希望优化的 AI 平台" required hint="当前仅支持 ChatGPT，已默认选中。">
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3.5 py-1.5 text-sm text-primary-foreground">
                   <CheckCircle2 className="size-3.5" />
                   {DEFAULT_PLATFORM}
                 </div>
               </Field>
             </div>
-            <Field label="11. 优化背景" hint="帮助我们更好地匹配优化节奏，此项选填。">
+            <Field label="10. 优化背景" hint="帮助我们更好地匹配优化节奏，此项选填。">
               <Textarea
                 rows={3}
                 placeholder="是否有营销规划 / 排期？如有可以自定义填写"
@@ -285,7 +285,7 @@ export function IntakeForm() {
                 onChange={(e) => set("optimizeBackground", e.target.value)}
               />
             </Field>
-            <Field label="12. 您希望用户搜索什么问题时看到您的品牌？" hint="此项选填，不清楚可以由项目团队协助挖掘。">
+            <Field label="11. 您希望用户搜索什么问题时看到您的品牌？" hint="此项选填，不清楚可以由项目团队协助挖掘。">
               <div className="space-y-3">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <ChoiceCard selected={form.intentType === "clear"} onSelect={() => set("intentType", "clear")} title="我有明确的问题" desc="可填写多个，一个问题一行" />
@@ -316,7 +316,7 @@ export function IntakeForm() {
             </Field>
             <div id="field-goal">
               <Field
-                label="13. 您的具体优化目标"
+                label="12. 您的具体优化目标"
                 required
                 hint="请选择本次项目的核心考核指标，四选一。最终目标及考核规则将以双方确认的 SOW 为准。"
                 error={errors.goal}
