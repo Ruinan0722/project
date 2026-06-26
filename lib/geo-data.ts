@@ -59,6 +59,13 @@ export const OPTIMIZATION_GOALS = [
 export interface ProductItem {
   id: string
   name: string
+  fn: string // 1. 产品功能
+  users: string // 2. 主要用户群体
+  scenario: string // 3. 应用场景
+}
+
+export function emptyProduct(id?: string): ProductItem {
+  return { id: id ?? `p${Date.now()}`, name: "", fn: "", users: "", scenario: "" }
 }
 
 // 国家-语言对（国家为语言上一级）
@@ -78,10 +85,7 @@ export interface GeoFormData {
   brandName: string
   brandAliases: string[] // 品牌别名（如 苹果 / Apple）
   scopeType: "brand_only" | "specific" | "" // 本次优化范围
-  products: ProductItem[]
-  productFunction: string // 产品功能
-  productUsers: string // 主要用户群体
-  productScenario: string // 应用场景
+  products: ProductItem[] // 每个产品各自包含功能 / 用户 / 场景
   hasOverseasSite: "yes" | "no" | ""
   overseasSiteUrl: string
   // 三、GEO 优化需求
@@ -103,10 +107,7 @@ export function emptyForm(): GeoFormData {
     brandName: "",
     brandAliases: [""],
     scopeType: "",
-    products: [{ id: "p1", name: "" }],
-    productFunction: "",
-    productUsers: "",
-    productScenario: "",
+    products: [emptyProduct("p1")],
     hasOverseasSite: "",
     overseasSiteUrl: "",
     regions: [{ id: "r1", country: "", language: "" }],
@@ -167,13 +168,23 @@ export function maskUrl(url: string): string {
   }
 }
 
-// 产品介绍合并展示（用于导出）
+// 单个产品的功能 / 用户 / 场景是否填写完整
+export function isProductComplete(p: ProductItem): boolean {
+  return !!p.name.trim() && !!p.fn.trim() && !!p.users.trim() && !!p.scenario.trim()
+}
+
+// 产品介绍合并展示（用于导出）：产品名【功能：… / 用户：… / 场景：…】
 export function productIntroText(d: GeoFormData): string {
-  const parts: string[] = []
-  if (d.productFunction) parts.push(`功能：${d.productFunction}`)
-  if (d.productUsers) parts.push(`用户：${d.productUsers}`)
-  if (d.productScenario) parts.push(`场景：${d.productScenario}`)
-  return parts.join("；")
+  return d.products
+    .filter((p) => p.name.trim())
+    .map((p) => {
+      const parts: string[] = []
+      if (p.fn) parts.push(`功能：${p.fn}`)
+      if (p.users) parts.push(`用户：${p.users}`)
+      if (p.scenario) parts.push(`场景：${p.scenario}`)
+      return `${p.name}（${parts.join("；")}）`
+    })
+    .join(" / ")
 }
 
 export function intentText(d: GeoFormData): string {
@@ -225,10 +236,22 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       brandAliases: ["即梦"],
       scopeType: "specific",
       optimizeBackground: "下半年有海外社媒投放排期，希望配合营销节奏提升 AI 推荐表现。",
-      products: [{ id: "p1", name: "AI 图片生成工具" }, { id: "p2", name: "AI 海报设计" }],
-      productFunction: "提供 AI 图片生成、海报设计与商品图制作能力",
-      productUsers: "设计师、内容创作者、营销人员",
-      productScenario: "图片生成、海报设计、商品图制作和创意内容生成",
+      products: [
+        {
+          id: "p1",
+          name: "AI 图片生成工具",
+          fn: "通过文本描述快速生成高质量图片",
+          users: "设计师、内容创作者",
+          scenario: "商品图制作、创意内容生成",
+        },
+        {
+          id: "p2",
+          name: "AI 海报设计",
+          fn: "一键生成营销海报与活动物料",
+          users: "营销人员、中小电商卖家",
+          scenario: "社媒配图、广告创意制作",
+        },
+      ],
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://dreamina.capcut.com/",
       regions: [
@@ -264,10 +287,22 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       brandAliases: ["安克"],
       scopeType: "specific",
       optimizeBackground: "",
-      products: [{ id: "p1", name: "充电宝" }, { id: "p2", name: "氮化镓充电器" }],
-      productFunction: "提供移动充电与快充电源解决方案",
-      productUsers: "数码爱好者与差旅人群",
-      productScenario: "日常充电、户外出行与办公",
+      products: [
+        {
+          id: "p1",
+          name: "充电宝",
+          fn: "大容量移动充电",
+          users: "数码爱好者、差旅人群",
+          scenario: "日常充电、户外出行",
+        },
+        {
+          id: "p2",
+          name: "氮化镓充电器",
+          fn: "小体积高功率快充",
+          users: "办公与差旅人群",
+          scenario: "多设备同时快充",
+        },
+      ],
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://www.anker.com/",
       regions: [
@@ -299,10 +334,15 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       brandAliases: ["正浩"],
       scopeType: "specific",
       optimizeBackground: "",
-      products: [{ id: "p1", name: "户外储能电源" }],
-      productFunction: "提供便携储能与户外电源解决方案",
-      productUsers: "露营、房车及应急用电人群",
-      productScenario: "户外露营、应急备电",
+      products: [
+        {
+          id: "p1",
+          name: "户外储能电源",
+          fn: "便携大容量储能与户外供电",
+          users: "露营、房车及应急用电人群",
+          scenario: "户外露营、应急备电",
+        },
+      ],
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://www.ecoflow.com/",
       regions: [
@@ -334,10 +374,22 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       brandAliases: ["希音"],
       scopeType: "specific",
       optimizeBackground: "大促前希望快速放量，配合站内活动排期。",
-      products: [{ id: "p1", name: "跨境快时尚服饰" }, { id: "p2", name: "美妆个护" }],
-      productFunction: "提供跨境快时尚服饰与美妆个护商品",
-      productUsers: "年轻女性消费者",
-      productScenario: "在线服饰与美妆购物",
+      products: [
+        {
+          id: "p1",
+          name: "跨境快时尚服饰",
+          fn: "高性价比快时尚服饰",
+          users: "年轻女性消费者",
+          scenario: "在线服饰购物",
+        },
+        {
+          id: "p2",
+          name: "美妆个护",
+          fn: "平价美妆与个护商品",
+          users: "年轻女性消费者",
+          scenario: "在线美妆个护购物",
+        },
+      ],
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://www.shein.com/",
       regions: [
@@ -370,10 +422,7 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       brandAliases: [""],
       scopeType: "",
       optimizeBackground: "",
-      products: [{ id: "p1", name: "" }],
-      productFunction: "",
-      productUsers: "",
-      productScenario: "",
+      products: [{ id: "p1", name: "", fn: "", users: "", scenario: "" }],
       hasOverseasSite: "no",
       overseasSiteUrl: "",
       regions: [{ id: "r1", country: "美国", language: "" }],
@@ -401,10 +450,15 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       brandAliases: [""],
       scopeType: "brand_only",
       optimizeBackground: "",
-      products: [{ id: "p1", name: "休闲手游" }],
-      productFunction: "面向全球休闲玩家的手游产品",
-      productUsers: "全球休闲玩家",
-      productScenario: "移动端休闲娱乐",
+      products: [
+        {
+          id: "p1",
+          name: "休闲手游",
+          fn: "面向全球休闲玩家的手游产品",
+          users: "全球休闲玩家",
+          scenario: "移动端休闲娱乐",
+        },
+      ],
       hasOverseasSite: "no",
       overseasSiteUrl: "",
       regions: [
@@ -435,10 +489,22 @@ export const MOCK_REQUESTS: RequestRecord[] = [
       brandAliases: ["绿联"],
       scopeType: "specific",
       optimizeBackground: "",
-      products: [{ id: "p1", name: "数码配件" }, { id: "p2", name: "扩展坞" }],
-      productFunction: "提供数码连接与扩展配件",
-      productUsers: "数码用户与办公人群",
-      productScenario: "设备连接、扩展与充电",
+      products: [
+        {
+          id: "p1",
+          name: "数码配件",
+          fn: "数据线、充电头等数码连接配件",
+          users: "数码用户与办公人群",
+          scenario: "设备连接与充电",
+        },
+        {
+          id: "p2",
+          name: "扩展坞",
+          fn: "多接口扩展与高速传输",
+          users: "办公与设计人群",
+          scenario: "笔记本扩展、多屏办公",
+        },
+      ],
       hasOverseasSite: "yes",
       overseasSiteUrl: "https://www.ugreen.com/",
       regions: [

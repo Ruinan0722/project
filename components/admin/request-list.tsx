@@ -15,22 +15,28 @@ import { cn } from "@/lib/utils"
 const STATUS_FILTERS: { value: RequestStatus | "all"; label: string }[] = [
   { value: "all", label: "全部" },
   { value: "submitted", label: "已提交" },
-  { value: "supplement", label: "待补充" },
   { value: "pending_review", label: "待确认" },
   { value: "confirmed", label: "已确认" },
   { value: "in_project", label: "已转入项目" },
-  { value: "draft", label: "草稿" },
-  { value: "closed", label: "已关闭" },
 ]
+
+// 内部人员可见的状态范围
+const VISIBLE_STATUSES: RequestStatus[] = ["submitted", "pending_review", "confirmed", "in_project"]
 
 export function RequestList() {
   const { requests } = useAdmin()
   const [keyword, setKeyword] = useState("")
   const [status, setStatus] = useState<RequestStatus | "all">("all")
 
+  // 仅展示内部人员可见的状态：已提交、待确认、已确认、已转入项目
+  const visibleRequests = useMemo(
+    () => requests.filter((r) => VISIBLE_STATUSES.includes(r.status)),
+    [requests],
+  )
+
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
-    return requests.filter((r) => {
+    return visibleRequests.filter((r) => {
       const matchStatus = status === "all" || r.status === status
       const matchKw =
         !kw ||
@@ -39,16 +45,17 @@ export function RequestList() {
         r.data.brandName.toLowerCase().includes(kw)
       return matchStatus && matchKw
     })
-  }, [requests, keyword, status])
+  }, [visibleRequests, keyword, status])
 
   const stats = useMemo(() => {
     return {
-      total: requests.length,
-      pending: requests.filter((r) => ["submitted", "pending_review"].includes(r.status)).length,
-      supplement: requests.filter((r) => r.status === "supplement").length,
-      inProject: requests.filter((r) => r.status === "in_project").length,
+      total: visibleRequests.length,
+      submitted: visibleRequests.filter((r) => r.status === "submitted").length,
+      pending: visibleRequests.filter((r) => r.status === "pending_review").length,
+      confirmed: visibleRequests.filter((r) => r.status === "confirmed").length,
+      inProject: visibleRequests.filter((r) => r.status === "in_project").length,
     }
-  }, [requests])
+  }, [visibleRequests])
 
   function handleExport() {
     exportCsv(filtered, `GEO客户需求_${new Date().toISOString().slice(0, 10)}`)
@@ -61,8 +68,8 @@ export function RequestList() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           { label: "需求总数", value: stats.total, tone: "text-foreground" },
-          { label: "待处理", value: stats.pending, tone: "text-primary" },
-          { label: "待补充", value: stats.supplement, tone: "text-amber-600" },
+          { label: "已提交", value: stats.submitted, tone: "text-primary" },
+          { label: "待确认", value: stats.pending, tone: "text-amber-600" },
           { label: "已转入项目", value: stats.inProject, tone: "text-emerald-600" },
         ].map((s) => (
           <div key={s.label} className="rounded-xl border border-border bg-card p-4">

@@ -42,11 +42,9 @@ import { toast } from "sonner"
 const OWNERS = ["未分配", "李销售", "陈商务", "GEO运营", "解决方案", "交付团队"]
 const STATUS_ORDER: RequestStatus[] = [
   "submitted",
-  "supplement",
   "pending_review",
   "confirmed",
   "in_project",
-  "closed",
 ]
 
 export function RequestDetail({ id }: { id: string }) {
@@ -137,18 +135,39 @@ export function RequestDetail({ id }: { id: string }) {
                 ]}
               />
               {d.scopeType === "specific" && (
-                <>
-                  <InfoRow label="产品或服务">
-                    <p className="text-sm font-medium">{d.products.map((p) => p.name).filter(Boolean).join(" / ") || "—"}</p>
-                  </InfoRow>
-                  <InfoGrid
-                    items={[
-                      ["产品功能", d.productFunction],
-                      ["主要用户群体", d.productUsers],
-                      ["应用场景", d.productScenario],
-                    ]}
-                  />
-                </>
+                <InfoRow label="产品或服务">
+                  <div className="space-y-3">
+                    {d.products.filter((p) => p.name.trim()).length === 0 && (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                    {d.products
+                      .filter((p) => p.name.trim())
+                      .map((p, i) => (
+                        <div key={p.id} className="rounded-xl border border-border bg-secondary/30 p-3.5">
+                          <p className="flex items-center gap-1.5 text-sm font-semibold">
+                            <span className="flex size-5 items-center justify-center rounded-md bg-accent text-xs text-accent-foreground">
+                              {i + 1}
+                            </span>
+                            {p.name}
+                          </p>
+                          <dl className="mt-2 space-y-1 text-sm">
+                            <div className="flex gap-2">
+                              <dt className="shrink-0 text-muted-foreground">1. 产品功能</dt>
+                              <dd className="font-medium">{p.fn || "—"}</dd>
+                            </div>
+                            <div className="flex gap-2">
+                              <dt className="shrink-0 text-muted-foreground">2. 主要用户群体</dt>
+                              <dd className="font-medium">{p.users || "—"}</dd>
+                            </div>
+                            <div className="flex gap-2">
+                              <dt className="shrink-0 text-muted-foreground">3. 应用场景</dt>
+                              <dd className="font-medium">{p.scenario || "—"}</dd>
+                            </div>
+                          </dl>
+                        </div>
+                      ))}
+                  </div>
+                </InfoRow>
               )}
               <InfoRow label="海外官网（已脱敏）">
                 {d.hasOverseasSite === "yes" && d.overseasSiteUrl ? (

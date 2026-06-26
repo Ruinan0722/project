@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { DEFAULT_PLATFORM, OPTIMIZATION_GOALS, emptyForm, type GeoFormData } from "@/lib/geo-data"
-import { ChoiceCard, Field, RegionEditor, RowList, SectionCard } from "@/components/apply/form-bits"
+import { DEFAULT_PLATFORM, OPTIMIZATION_GOALS, emptyForm, isProductComplete, type GeoFormData } from "@/lib/geo-data"
+import { ChoiceCard, Field, ProductEditor, RegionEditor, RowList, SectionCard } from "@/components/apply/form-bits"
 
 const DRAFT_KEY = "geo-form-draft"
 
@@ -41,11 +41,7 @@ export function IntakeForm() {
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }))
   }
 
-  const productComplete =
-    form.products.some((p) => p.name.trim()) &&
-    !!form.productFunction &&
-    !!form.productUsers &&
-    !!form.productScenario
+  const productComplete = form.products.length > 0 && form.products.every(isProductComplete)
 
   const progress = useMemo(() => {
     const checks = [
@@ -72,7 +68,7 @@ export function IntakeForm() {
     if (!form.brandName.trim()) e.brandName = "请填写品牌名称"
     if (!form.scopeType) e.scopeType = "请选择本次优化范围"
     if (form.scopeType === "specific" && !productComplete)
-      e.product = "请填写产品或服务名称，并完整说明功能、用户群体与应用场景"
+      e.product = "请为每个产品或服务填写名称，并完整说明功能、用户群体与应用场景"
     if (!form.hasOverseasSite) e.hasOverseasSite = "请选择是否有海外官网"
     if (form.hasOverseasSite === "yes") {
       if (!form.overseasSiteUrl.trim()) e.overseasSiteUrl = "请填写海外官网地址"
@@ -225,46 +221,18 @@ export function IntakeForm() {
             {form.scopeType === "specific" && (
               <div id="field-product" className="rounded-xl border border-dashed border-primary/40 bg-accent/30 p-4">
                 <Field
-                  label="7. 请简单介绍该产品或服务"
+                  label="请简单介绍该产品或服务"
                   required
-                  hint="请填写产品或服务名称，并分别说明以下三项，便于我们快速理解您的业务。"
+                  hint="可添加多个产品或服务，每个都需填写名称，并分别说明功能、主要用户群体与应用场景。"
                   error={errors.product}
                 >
-                  <div className="space-y-2.5">
-                    <RowList
-                      value={form.products.map((p) => p.name)}
-                      onChange={(names) =>
-                        set(
-                          "products",
-                          names.map((name, i) => ({ id: form.products[i]?.id ?? `p${Date.now()}${i}`, name })),
-                        )
-                      }
-                      placeholder={() => "产品或服务名称，例如：AI 图片生成工具"}
-                      addLabel="添加产品或服务"
-                      numbered={false}
-                    />
-                    <Input
-                      placeholder="① 产品功能，例如：帮助用户一键生成营销海报的 AI 设计工具"
-                      value={form.productFunction}
-                      onChange={(e) => set("productFunction", e.target.value)}
-                    />
-                    <Input
-                      placeholder="② 主要用户群体，例如：中小电商卖家、内容创作者、设计师"
-                      value={form.productUsers}
-                      onChange={(e) => set("productUsers", e.target.value)}
-                    />
-                    <Input
-                      placeholder="③ 应用场景，例如：电商主图制作、社媒配图、广告创意生成"
-                      value={form.productScenario}
-                      onChange={(e) => set("productScenario", e.target.value)}
-                    />
-                  </div>
+                  <ProductEditor value={form.products} onChange={(v) => set("products", v)} />
                 </Field>
               </div>
             )}
 
             <div id="field-hasOverseasSite">
-              <Field label="8. 是否有海外官方网站？" required error={errors.hasOverseasSite}>
+              <Field label="7. 是否有海外官方网站？" required error={errors.hasOverseasSite}>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <ChoiceCard selected={form.hasOverseasSite === "yes"} onSelect={() => set("hasOverseasSite", "yes")} title="有海外官网" />
                   <ChoiceCard selected={form.hasOverseasSite === "no"} onSelect={() => set("hasOverseasSite", "no")} title="暂无海外官网" />
@@ -273,7 +241,7 @@ export function IntakeForm() {
             </div>
             {form.hasOverseasSite === "yes" && (
               <div id="field-overseasSiteUrl" className="rounded-xl border border-dashed border-primary/40 bg-accent/30 p-4">
-                <Field label="9. 海外官网地址" required hint="请输入完整的海外官网地址。" error={errors.overseasSiteUrl}>
+                <Field label="8. 海外官网地址" required hint="请输入完整的海外官网地址。" error={errors.overseasSiteUrl}>
                   <Input
                     inputMode="url"
                     placeholder="例如：https://www.example.com"
@@ -293,7 +261,7 @@ export function IntakeForm() {
           <SectionCard step="三" title="GEO 优化需求" desc="收集国家语言、平台、优化背景、用户问题及优化目标">
             <div id="field-regions">
               <Field
-                label="10. 希望重点优化的国家与语言"
+                label="9. 希望重点优化的国家与语言"
                 required
                 hint="选择目标国家与语言，可添加多组，例如：美国-英语；英国-英语。"
                 error={errors.regions}
@@ -302,14 +270,14 @@ export function IntakeForm() {
               </Field>
             </div>
             <div id="field-platforms">
-              <Field label="11. 希望优化的 AI 平台" required hint="当前仅支持 ChatGPT，已默认选中。">
+              <Field label="10. 希望优化的 AI 平台" required hint="当前仅支持 ChatGPT，已默认选中。">
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3.5 py-1.5 text-sm text-primary-foreground">
                   <CheckCircle2 className="size-3.5" />
                   {DEFAULT_PLATFORM}
                 </div>
               </Field>
             </div>
-            <Field label="12. 优化背景" hint="帮助我们更好地匹配优化节奏，此项选填。">
+            <Field label="11. 优化背景" hint="帮助我们更好地匹配优化节奏，此项选填。">
               <Textarea
                 rows={3}
                 placeholder="是否有营销规划 / 排期？如有可以自定义填写"
@@ -317,7 +285,7 @@ export function IntakeForm() {
                 onChange={(e) => set("optimizeBackground", e.target.value)}
               />
             </Field>
-            <Field label="13. 您希望用户搜索什么问题时看到您的品牌？" hint="此项选填，不清楚可以由项目团队协助挖掘。">
+            <Field label="12. 您希望用户搜索什么问题时看到您的品牌？" hint="此项选填，不清楚可以由项目团队协助挖掘。">
               <div className="space-y-3">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <ChoiceCard selected={form.intentType === "clear"} onSelect={() => set("intentType", "clear")} title="我有明确的问题" desc="可填写多个，一个问题一行" />
@@ -348,7 +316,7 @@ export function IntakeForm() {
             </Field>
             <div id="field-goal">
               <Field
-                label="14. 您的具体优化目标"
+                label="13. 您的具体优化目标"
                 required
                 hint="请选择本次项目的核心考核指标，四选一。最终目标及考核规则将以双方确认的 SOW 为准。"
                 error={errors.goal}

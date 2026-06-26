@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ChoiceCard, Field, RegionEditor, RowList } from "@/components/apply/form-bits"
+import { ChoiceCard, Field, ProductEditor, RegionEditor, RowList } from "@/components/apply/form-bits"
 import { useAdmin } from "./store"
 import {
   DEFAULT_PLATFORM,
@@ -104,23 +104,7 @@ export function EditDialog({
           {draft.scopeType === "specific" && (
             <div className="rounded-xl border border-dashed border-primary/40 bg-accent/30 p-4">
               <Field label="请简单介绍该产品或服务" required>
-                <div className="space-y-2.5">
-                  <RowList
-                    value={draft.products.map((p) => p.name)}
-                    onChange={(names) =>
-                      set(
-                        "products",
-                        names.map((name, i) => ({ id: draft.products[i]?.id ?? `p${Date.now()}${i}`, name })),
-                      )
-                    }
-                    placeholder={() => "产品或服务名称"}
-                    addLabel="添加产品或服务"
-                    numbered={false}
-                  />
-                  <Input placeholder="① 产品功能" value={draft.productFunction} onChange={(e) => set("productFunction", e.target.value)} />
-                  <Input placeholder="② 主要用户群体" value={draft.productUsers} onChange={(e) => set("productUsers", e.target.value)} />
-                  <Input placeholder="③ 应用场景" value={draft.productScenario} onChange={(e) => set("productScenario", e.target.value)} />
-                </div>
+                <ProductEditor value={draft.products} onChange={(v) => set("products", v)} />
               </Field>
             </div>
           )}

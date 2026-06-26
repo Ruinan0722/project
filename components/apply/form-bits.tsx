@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { COUNTRY_OPTIONS, LANGUAGE_OPTIONS, type RegionItem } from "@/lib/geo-data"
+import { COUNTRY_OPTIONS, LANGUAGE_OPTIONS, emptyProduct, type ProductItem, type RegionItem } from "@/lib/geo-data"
 
 export function SectionCard({
   step,
@@ -235,6 +235,79 @@ export function RowList({
       <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={add}>
         <Plus className="size-4" />
         {addLabel}
+      </Button>
+    </div>
+  )
+}
+
+// 产品编辑器：每个产品含名称，及带序号 1/2/3 的功能、用户群体、应用场景
+export function ProductEditor({
+  value,
+  onChange,
+}: {
+  value: ProductItem[]
+  onChange: (next: ProductItem[]) => void
+}) {
+  function update(id: string, patch: Partial<ProductItem>) {
+    onChange(value.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+  }
+  function add() {
+    onChange([...value, emptyProduct()])
+  }
+  function remove(id: string) {
+    onChange(value.filter((p) => p.id !== id))
+  }
+  const rows: { key: keyof ProductItem; label: string; placeholder: string }[] = [
+    { key: "fn", label: "1", placeholder: "产品功能，例如：帮助用户一键生成营销海报的 AI 设计工具" },
+    { key: "users", label: "2", placeholder: "主要用户群体，例如：中小电商卖家、内容创作者、设计师" },
+    { key: "scenario", label: "3", placeholder: "应用场景，例如：电商主图制作、社媒配图、广告创意生成" },
+  ]
+  return (
+    <div className="space-y-3">
+      {value.map((p, i) => (
+        <div key={p.id} className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+              <span className="flex size-5 items-center justify-center rounded-md bg-accent text-xs text-accent-foreground">
+                {i + 1}
+              </span>
+              产品 / 服务 {i + 1}
+            </span>
+            {value.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 text-muted-foreground"
+                onClick={() => remove(p.id)}
+              >
+                <X className="size-3.5" />
+                删除
+              </Button>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Input
+              placeholder="产品或服务名称，例如：AI 图片生成工具"
+              value={p.name}
+              onChange={(e) => update(p.id, { name: e.target.value })}
+            />
+            {rows.map((r) => (
+              <div key={r.key} className="flex items-center gap-2">
+                <span className="w-5 shrink-0 text-right text-sm tabular-nums text-muted-foreground">{r.label}.</span>
+                <Input
+                  placeholder={r.placeholder}
+                  value={p[r.key] as string}
+                  onChange={(e) => update(p.id, { [r.key]: e.target.value })}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+      <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={add}>
+        <Plus className="size-4" />
+        添加产品或服务
       </Button>
     </div>
   )
