@@ -2,28 +2,54 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 
-export type Role = "customer" | "staff" | "admin"
+export type Role = "customer" | "sdr" | "sales" | "leader" | "presales" | "ops" | "admin"
 
-export type SectionKey = "intake" | "requests" | "settings"
+export type SectionKey =
+  | "intake"
+  | "home"
+  | "leads"
+  | "customers"
+  | "requests"
+  | "opportunities"
+  | "contracts"
+  | "dashboard"
+  | "settings"
 
-export const ROLE_META: Record<
-  Role,
-  { label: string; desc: string; sections: SectionKey[] }
-> = {
+export const ROLE_META: Record<Role, { label: string; desc: string; sections: SectionKey[] }> = {
   customer: {
     label: "客户",
-    desc: "仅可填写并提交自己的需求",
+    desc: "仅填写并提交需求单",
     sections: ["intake"],
   },
-  staff: {
-    label: "内部人员",
-    desc: "可填报并管理所有客户需求",
-    sections: ["intake", "requests"],
+  sdr: {
+    label: "SDR",
+    desc: "承接与跟进线索、转出客户",
+    sections: ["home", "leads", "customers", "requests", "dashboard"],
+  },
+  sales: {
+    label: "销售",
+    desc: "维护客户、推进商机与需求",
+    sections: ["home", "leads", "customers", "requests", "opportunities", "contracts", "dashboard"],
+  },
+  leader: {
+    label: "销售 Leader",
+    desc: "查看本部门全量经营数据",
+    sections: ["home", "leads", "customers", "requests", "opportunities", "contracts", "dashboard"],
+  },
+  presales: {
+    label: "售前顾问",
+    desc: "支持需求确认与方案沟通",
+    sections: ["home", "customers", "requests", "opportunities", "dashboard"],
+  },
+  ops: {
+    label: "销售运营",
+    desc: "维护合同、配置系统",
+    sections: ["home", "customers", "opportunities", "contracts", "dashboard", "settings"],
   },
   admin: {
     label: "管理员",
-    desc: "拥有全部权限，含系统配置",
-    sections: ["intake", "requests", "settings"],
+    desc: "拥有全部权限",
+    sections: ["home", "leads", "customers", "requests", "opportunities", "contracts", "dashboard", "settings", "intake"],
   },
 }
 
@@ -38,7 +64,7 @@ interface RoleContextValue {
 const RoleContext = createContext<RoleContextValue | null>(null)
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRoleState] = useState<Role>("customer")
+  const [role, setRoleState] = useState<Role>("sales")
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? (window.localStorage.getItem(STORAGE_KEY) as Role | null) : null
