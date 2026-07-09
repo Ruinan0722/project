@@ -218,6 +218,17 @@ export function wan(n: number): string {
   return `${(n / 10000).toLocaleString("zh-CN", { maximumFractionDigits: 1 })} 万`
 }
 
+const GOAL_LABELS: Record<string, string> = {
+  source: "来源率",
+  recommend: "推荐率",
+  top3: "前三推荐率",
+  priority: "优先推荐率",
+}
+export function goalOrPlatform(goal: string, platform: string): string {
+  const g = GOAL_LABELS[goal] ?? goal
+  return `${g} · ${platform}`
+}
+
 // ===== Mock 数据 =====
 // 客户 id 与需求记录（geo-data MOCK_REQUESTS）中的公司对应
 

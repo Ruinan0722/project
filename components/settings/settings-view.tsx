@@ -233,32 +233,43 @@ function TagEditor({ title, initial, placeholder }: { title: string; initial: st
 
 /* ===== 用户与权限 ===== */
 
+type UserRoleKey = "sdr" | "sales" | "leader" | "ops" | "presales" | "admin"
+
 interface UserRow {
   id: string
   name: string
   email: string
-  role: "customer" | "staff" | "admin"
+  role: UserRoleKey
 }
 
-const ROLE_LABEL: Record<UserRow["role"], string> = {
-  customer: "客户",
-  staff: "内部人员",
+const ROLE_ORDER: UserRoleKey[] = ["sdr", "sales", "leader", "ops", "presales", "admin"]
+const ROLE_LABEL: Record<UserRoleKey, string> = {
+  sdr: "SDR",
+  sales: "销售",
+  leader: "销售 Leader",
+  ops: "销售运营",
+  presales: "售前顾问",
   admin: "管理员",
 }
 
 const INITIAL_USERS: UserRow[] = [
-  { id: "u1", name: "李销售", email: "li@geo.com", role: "staff" },
-  { id: "u2", name: "陈商务", email: "chen@geo.com", role: "staff" },
-  { id: "u3", name: "王管理", email: "admin@geo.com", role: "admin" },
-  { id: "u4", name: "张三（客户）", email: "zhang@bytedance.com", role: "customer" },
+  { id: "u1", name: "周 SDR", email: "sdr@geo.com", role: "sdr" },
+  { id: "u2", name: "李销售", email: "li@geo.com", role: "sales" },
+  { id: "u3", name: "陈商务", email: "chen@geo.com", role: "sales" },
+  { id: "u4", name: "王 Leader", email: "leader@geo.com", role: "leader" },
+  { id: "u5", name: "赵运营", email: "ops@geo.com", role: "ops" },
+  { id: "u6", name: "孙管理", email: "admin@geo.com", role: "admin" },
 ]
 
-const PERMISSION_MATRIX: { feature: string; customer: boolean; staff: boolean; admin: boolean }[] = [
-  { feature: "客户需求填报", customer: true, staff: true, admin: true },
-  { feature: "客户需求管理（列表 / 详情）", customer: false, staff: true, admin: true },
-  { feature: "修改状态 / 分配跟进人", customer: false, staff: true, admin: true },
-  { feature: "导出 Excel / 下载 PDF", customer: false, staff: true, admin: true },
-  { feature: "系统配置（字段 / 选项 / 权限）", customer: false, staff: false, admin: true },
+const PERMISSION_MATRIX: { feature: string; sdr: boolean; sales: boolean; leader: boolean; ops: boolean; admin: boolean }[] = [
+  { feature: "线索管理（承接 / 跟进）", sdr: true, sales: true, leader: true, ops: true, admin: true },
+  { feature: "线索转客户", sdr: true, sales: true, leader: true, ops: false, admin: true },
+  { feature: "客户管理（列表 / 详情）", sdr: false, sales: true, leader: true, ops: true, admin: true },
+  { feature: "商机管理（创建 / 推进 / 输单）", sdr: false, sales: true, leader: true, ops: false, admin: true },
+  { feature: "需求管理（确认 / 转项目）", sdr: false, sales: true, leader: true, ops: true, admin: true },
+  { feature: "合同管理（签署 / 项目状态）", sdr: false, sales: true, leader: true, ops: true, admin: true },
+  { feature: "数据看板（团队维度）", sdr: false, sales: false, leader: true, ops: true, admin: true },
+  { feature: "系统设置（人员 / 权限 / 配置）", sdr: false, sales: false, leader: false, ops: false, admin: true },
 ]
 
 function UsersConfig() {
