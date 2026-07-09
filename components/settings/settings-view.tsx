@@ -26,8 +26,8 @@ export function SettingsView() {
   return (
     <div>
       <header className="border-b border-border bg-card/60 px-5 py-5 lg:px-8">
-        <h1 className="text-xl font-semibold tracking-tight">系统配置</h1>
-        <p className="mt-1 text-sm text-muted-foreground">配置客户需求表单字段、选项库，以及用户与角色权限。</p>
+        <h1 className="text-xl font-semibold tracking-tight">系统设置</h1>
+        <p className="mt-1 text-sm text-muted-foreground">配置客户需求表单字段、选项库，以及人员与角色权限。</p>
         <div className="mt-4 flex gap-1 overflow-x-auto">
           {TABS.map((t) => (
             <button
@@ -276,9 +276,10 @@ function UsersConfig() {
   const [users, setUsers] = useState(INITIAL_USERS)
 
   function cycleRole(id: string) {
-    const order: UserRow["role"][] = ["customer", "staff", "admin"]
     setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, role: order[(order.indexOf(u.role) + 1) % order.length] } : u)),
+      prev.map((u) =>
+        u.id === id ? { ...u, role: ROLE_ORDER[(ROLE_ORDER.indexOf(u.role) + 1) % ROLE_ORDER.length] } : u,
+      ),
     )
   }
 
@@ -326,8 +327,10 @@ function UsersConfig() {
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
                 <th className="px-4 py-3 font-medium">功能</th>
-                <th className="px-4 py-3 text-center font-medium">客户</th>
-                <th className="px-4 py-3 text-center font-medium">内部人员</th>
+                <th className="px-4 py-3 text-center font-medium">SDR</th>
+                <th className="px-4 py-3 text-center font-medium">销售</th>
+                <th className="px-4 py-3 text-center font-medium">Leader</th>
+                <th className="px-4 py-3 text-center font-medium">销售运营</th>
                 <th className="px-4 py-3 text-center font-medium">管理员</th>
               </tr>
             </thead>
@@ -335,8 +338,10 @@ function UsersConfig() {
               {PERMISSION_MATRIX.map((row) => (
                 <tr key={row.feature} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">{row.feature}</td>
-                  <PermCell allowed={row.customer} />
-                  <PermCell allowed={row.staff} />
+                  <PermCell allowed={row.sdr} />
+                  <PermCell allowed={row.sales} />
+                  <PermCell allowed={row.leader} />
+                  <PermCell allowed={row.ops} />
                   <PermCell allowed={row.admin} />
                 </tr>
               ))}
