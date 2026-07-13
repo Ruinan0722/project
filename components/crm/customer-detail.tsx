@@ -232,7 +232,7 @@ export function CustomerDetail({ id }: { id: string }) {
                 <div>
                   <p className="font-medium">{o.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {o.projectType} · 预计签约 {o.expectedSignDate || "—"}
+                    {o.projectTypes.join(" / ")} · 预计签约 {o.expectedSignDate || "—"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

@@ -104,11 +104,15 @@ export function OpportunityDetail({ id }: { id: string }) {
               </Link>
             )}
             {" · "}
-            {opp.projectType} · 负责人：{opp.owner}
+            {opp.projectTypes.join(" / ")} · 负责人：{opp.owner}
           </p>
         </div>
         {!isClosed && editable && (
           <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-1.5" onClick={() => setEditOpen(true)}>
+              <Pencil className="size-4" />
+              编辑商机
+            </Button>
             <Button variant="outline" className="gap-1.5 text-destructive" onClick={() => setLostOpen(true)}>
               <Ban className="size-4" />
               标记输单
@@ -161,7 +165,15 @@ export function OpportunityDetail({ id }: { id: string }) {
               <InfoRow label="所属客户">{customer?.companyName || "—"}</InfoRow>
               <InfoRow label="品牌">{opp.brandName || "—"}</InfoRow>
               <InfoRow label="区域">{opp.region}</InfoRow>
-              <InfoRow label="项目类型">{opp.projectType}</InfoRow>
+              <InfoRow label="项目类型">
+                <div className="flex flex-wrap gap-1.5">
+                  {opp.projectTypes.map((t) => (
+                    <span key={t} className="rounded-full bg-secondary px-2 py-0.5 text-xs">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </InfoRow>
               <InfoRow label="优化目标 / 平台">{goalOrPlatform(opp.goal, opp.platform)}</InfoRow>
               <InfoRow label="优化周期">{opp.period}</InfoRow>
               <InfoRow label="商机金额">
@@ -220,10 +232,47 @@ export function OpportunityDetail({ id }: { id: string }) {
               )}
             </div>
           </div>
+
+          <div className="mt-5 rounded-2xl border border-border bg-card p-5">
+            <div className="flex items-center gap-1.5">
+              <Headset className="size-4 text-primary" />
+              <h2 className="text-sm font-semibold">顾问反馈</h2>
+            </div>
+            {canEditAdvisor && (
+              <div className="mt-3 space-y-2.5 rounded-xl bg-secondary/40 p-3">
+                <Textarea
+                  rows={3}
+                  placeholder="记录售前顾问的评估与方案建议…"
+                  value={advisorNote}
+                  onChange={(e) => setAdvisorNote(e.target.value)}
+                />
+                <Button size="sm" className="w-full gap-1.5" onClick={submitAdvisorNote}>
+                  <MessageSquarePlus className="size-4" />
+                  添加反馈
+                </Button>
+              </div>
+            )}
+            <div className="mt-4 space-y-3">
+              {opp.advisorNotes.length === 0 ? (
+                <EmptyState text="暂无顾问反馈" />
+              ) : (
+                [...opp.advisorNotes].reverse().map((n) => (
+                  <div key={n.id} className="border-l-2 border-emerald-400/40 pl-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium">{n.author}</span>
+                      <span className="text-[11px] text-muted-foreground">{n.date}</span>
+                    </div>
+                    <p className="mt-1 text-sm leading-relaxed">{n.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       {lostOpen && <LostOpportunityDialog oppId={opp.id} open={lostOpen} onOpenChange={setLostOpen} />}
+      {editOpen && <EditOpportunityDialog opp={opp} open={editOpen} onOpenChange={setEditOpen} />}
     </div>
   )
 }

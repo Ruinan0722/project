@@ -233,7 +233,7 @@ function TagEditor({ title, initial, placeholder }: { title: string; initial: st
 
 /* ===== 用户与权限 ===== */
 
-type UserRoleKey = "sdr" | "sales" | "leader" | "ops" | "admin"
+type UserRoleKey = "sdr" | "sales" | "leader" | "ops" | "presales" | "admin"
 
 interface UserRow {
   id: string
@@ -242,12 +242,13 @@ interface UserRow {
   role: UserRoleKey
 }
 
-const ROLE_ORDER: UserRoleKey[] = ["sdr", "sales", "leader", "ops", "admin"]
+const ROLE_ORDER: UserRoleKey[] = ["sdr", "sales", "leader", "ops", "presales", "admin"]
 const ROLE_LABEL: Record<UserRoleKey, string> = {
   sdr: "SDR",
   sales: "销售",
   leader: "销售 Leader",
   ops: "销售运营",
+  presales: "售前顾问",
   admin: "管理员",
 }
 
@@ -257,26 +258,30 @@ const INITIAL_USERS: UserRow[] = [
   { id: "u3", name: "陈商务", email: "chen@geo.com", role: "sales" },
   { id: "u4", name: "王 Leader", email: "leader@geo.com", role: "leader" },
   { id: "u5", name: "赵运营", email: "ops@geo.com", role: "ops" },
-  { id: "u6", name: "孙管理", email: "admin@geo.com", role: "admin" },
+  { id: "u6", name: "刘顾问", email: "advisor@geo.com", role: "presales" },
+  { id: "u7", name: "孙管理", email: "admin@geo.com", role: "admin" },
 ]
 
+type Perm = boolean | "view"
 // ○ 表示仅可查看（只读），✓ 表示可操作
 const PERMISSION_MATRIX: {
   feature: string
-  sdr: boolean | "view"
-  sales: boolean | "view"
-  leader: boolean | "view"
-  ops: boolean | "view"
-  admin: boolean | "view"
+  sdr: Perm
+  sales: Perm
+  leader: Perm
+  ops: Perm
+  presales: Perm
+  admin: Perm
 }[] = [
-  { feature: "线索管理（承接 / 跟进 / 转客户）", sdr: true, sales: false, leader: false, ops: true, admin: true },
-  { feature: "客户管理（列表 / 详情）", sdr: "view", sales: true, leader: true, ops: true, admin: true },
-  { feature: "商机管理（创建 / 推进 / 输单）", sdr: false, sales: true, leader: true, ops: false, admin: true },
-  { feature: "需求管理（确认 / 转项目）", sdr: "view", sales: true, leader: true, ops: true, admin: true },
-  { feature: "合同管理（查看范围）", sdr: false, sales: "view", leader: "view", ops: true, admin: true },
-  { feature: "合同新增 / 编辑字段", sdr: false, sales: false, leader: false, ops: true, admin: true },
-  { feature: "数据看板（团队维度）", sdr: false, sales: false, leader: true, ops: true, admin: true },
-  { feature: "系统设置（人员 / 权限 / 配置）", sdr: false, sales: false, leader: false, ops: false, admin: true },
+  { feature: "线索管理（新增 / 跟进 / 转客户）", sdr: true, sales: false, leader: false, ops: true, presales: false, admin: true },
+  { feature: "客户管理（列表 / 详情 / 编辑）", sdr: "view", sales: true, leader: true, ops: true, presales: false, admin: true },
+  { feature: "商机管理（创建 / 推进 / 编辑 / 输单）", sdr: false, sales: true, leader: true, ops: false, presales: "view", admin: true },
+  { feature: "商机顾问反馈（新增 / 编辑）", sdr: false, sales: false, leader: false, ops: false, presales: true, admin: true },
+  { feature: "需求管理（确认 / 转项目）", sdr: "view", sales: true, leader: true, ops: true, presales: false, admin: true },
+  { feature: "合同管理（查看范围）", sdr: false, sales: "view", leader: "view", ops: true, presales: false, admin: true },
+  { feature: "合同新增 / 编辑字段", sdr: false, sales: false, leader: false, ops: true, presales: false, admin: true },
+  { feature: "数据看板（团队维度）", sdr: false, sales: false, leader: true, ops: true, presales: false, admin: true },
+  { feature: "系统设置（人员 / 权限 / 配置）", sdr: false, sales: false, leader: false, ops: false, presales: false, admin: true },
 ]
 
 function UsersConfig() {
@@ -338,6 +343,7 @@ function UsersConfig() {
                 <th className="px-4 py-3 text-center font-medium">销售</th>
                 <th className="px-4 py-3 text-center font-medium">Leader</th>
                 <th className="px-4 py-3 text-center font-medium">销售运营</th>
+                <th className="px-4 py-3 text-center font-medium">售前顾问</th>
                 <th className="px-4 py-3 text-center font-medium">管理员</th>
               </tr>
             </thead>
@@ -349,6 +355,7 @@ function UsersConfig() {
                   <PermCell allowed={row.sales} />
                   <PermCell allowed={row.leader} />
                   <PermCell allowed={row.ops} />
+                  <PermCell allowed={row.presales} />
                   <PermCell allowed={row.admin} />
                 </tr>
               ))}
