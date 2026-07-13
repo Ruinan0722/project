@@ -37,6 +37,7 @@ interface CrmContextValue {
   getOpportunity: (id: string) => Opportunity | undefined
   getContract: (id: string) => Contract | undefined
   // 线索
+  createLead: (data: Partial<Lead>) => string
   updateLead: (id: string, patch: Partial<Lead>) => void
   addLeadNote: (id: string, content: string, wechatAdded: boolean, author?: string) => void
   convertLeadToCustomer: (id: string) => string // 返回新客户 id
@@ -50,6 +51,7 @@ interface CrmContextValue {
   // 商机
   updateOpportunity: (id: string, patch: Partial<Opportunity>) => void
   addOpportunityNote: (id: string, content: string, author?: string) => void
+  addAdvisorNote: (id: string, content: string, author?: string) => void
   createOpportunity: (customerId: string, data: Partial<Opportunity>) => string
   setOppStage: (id: string, stage: OppStage) => void
   markOppLost: (id: string, info: { lostStage: string; lostReason: string; competitor: string }) => void
@@ -72,6 +74,31 @@ export function CrmProvider({ children }: { children: ReactNode }) {
   const getContract = useCallback((id: string) => contracts.find((c) => c.id === id), [contracts])
 
   // ===== 线索 =====
+  const createLead = useCallback((data: Partial<Lead>): string => {
+    const id = rid("l")
+    const lead: Lead = {
+      id,
+      firstContactDate: data.firstContactDate || nowDate(),
+      transferDate: data.transferDate ?? "",
+      source: data.source ?? "线上投放",
+      companyName: data.companyName ?? "未命名公司",
+      city: data.city ?? "",
+      region: data.region ?? "华东区",
+      contactName: data.contactName ?? "",
+      contactTitle: data.contactTitle ?? "",
+      email: data.email ?? "",
+      sdr: data.sdr ?? "周 SDR",
+      sales: data.sales ?? "未分配",
+      level: data.level ?? "B",
+      followState: data.followState ?? "need",
+      status: data.status ?? "untouched",
+      invalidReason: data.invalidReason,
+      notes: data.notes ?? [],
+    }
+    setLeads((prev) => [lead, ...prev])
+    return id
+  }, [])
+
   const updateLead = useCallback((id: string, patch: Partial<Lead>) => {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)))
   }, [])
@@ -205,6 +232,16 @@ export function CrmProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  const addAdvisorNote = useCallback((id: string, content: string, author = "售前顾问") => {
+    setOpportunities((prev) =>
+      prev.map((o) =>
+        o.id === id
+          ? { ...o, advisorNotes: [...o.advisorNotes, { id: rid("ad"), author, content, date: nowStr() }] }
+          : o,
+      ),
+    )
+  }, [])
+
   const createOpportunity = useCallback(
     (customerId: string, data: Partial<Opportunity>): string => {
       const cust = customers.find((c) => c.id === customerId)
@@ -223,10 +260,11 @@ export function CrmProvider({ children }: { children: ReactNode }) {
         expectedSignDate: data.expectedSignDate ?? "",
         stage: "contact",
         owner: data.owner ?? cust?.owner ?? "当前用户",
-        projectType: data.projectType ?? "GEO 基础优化",
+        projectTypes: data.projectTypes && data.projectTypes.length ? data.projectTypes : ["监测"],
         primaryContactId: data.primaryContactId ?? cust?.contacts.find((c) => c.isPrimary)?.id ?? "",
         requestIds: data.requestIds ?? [],
         notes: [],
+        advisorNotes: [],
         createdAt: nowDate(),
         lastFollowAt: nowStr(),
       }
@@ -344,6 +382,7 @@ export function CrmProvider({ children }: { children: ReactNode }) {
       getCustomer,
       getOpportunity,
       getContract,
+      createLead,
       updateLead,
       addLeadNote,
       convertLeadToCustomer,
@@ -355,6 +394,7 @@ export function CrmProvider({ children }: { children: ReactNode }) {
       setPrimaryContact,
       updateOpportunity,
       addOpportunityNote,
+      addAdvisorNote,
       createOpportunity,
       setOppStage,
       markOppLost,
@@ -370,6 +410,7 @@ export function CrmProvider({ children }: { children: ReactNode }) {
       getCustomer,
       getOpportunity,
       getContract,
+      createLead,
       updateLead,
       addLeadNote,
       convertLeadToCustomer,
@@ -381,6 +422,7 @@ export function CrmProvider({ children }: { children: ReactNode }) {
       setPrimaryContact,
       updateOpportunity,
       addOpportunityNote,
+      addAdvisorNote,
       createOpportunity,
       setOppStage,
       markOppLost,

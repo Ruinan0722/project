@@ -2,11 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { ArrowLeft, ArrowRight, Ban, MessageSquarePlus, UserCheck, Wallet } from "lucide-react"
+import { ArrowLeft, ArrowRight, Ban, MessageSquarePlus, Pencil, UserCheck, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -20,11 +18,11 @@ import {
 import { Pill, InfoRow, EmptyState } from "./ui"
 import { useCrm } from "./store"
 import { useRole } from "@/components/app/role-context"
-import { LEAD_STATUS_META, type Lead } from "@/lib/crm-data"
+import { LEAD_STATUS_META } from "@/lib/crm-data"
+import { ConvertLeadDialog, LeadFormDialog } from "./lead-actions"
 
 export function LeadDetail({ id }: { id: string }) {
-  const router = useRouter()
-  const { getLead, addLeadNote, convertLeadToCustomer, markLeadInvalid } = useCrm()
+  const { getLead, addLeadNote, markLeadInvalid } = useCrm()
   const { canEdit } = useRole()
   const editable = canEdit("leads")
   const lead = getLead(id)
@@ -33,6 +31,8 @@ export function LeadDetail({ id }: { id: string }) {
   const [wechat, setWechat] = useState(false)
   const [invalidOpen, setInvalidOpen] = useState(false)
   const [invalidReason, setInvalidReason] = useState("")
+  const [convertOpen, setConvertOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   if (!lead) {
     return (
@@ -56,14 +56,6 @@ export function LeadDetail({ id }: { id: string }) {
     setNote("")
     setWechat(false)
     toast.success("跟进记录已添加")
-  }
-
-  function convert() {
-    const cid = convertLeadToCustomer(lead.id)
-    if (cid) {
-      toast.success("已生成客户，正在跳转至客户详情")
-      router.push(`/customers/${cid}`)
-    }
   }
 
   function confirmInvalid() {
@@ -100,6 +92,12 @@ export function LeadDetail({ id }: { id: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {editable && lead.status !== "converted" && (
+            <Button variant="outline" className="gap-1.5" onClick={() => setEditOpen(true)}>
+              <Pencil className="size-4" />
+              编辑线索
+            </Button>
+          )}
           {canConvert && (
             <Button variant="outline" className="gap-1.5 text-destructive" onClick={() => setInvalidOpen(true)}>
               <Ban className="size-4" />
@@ -107,7 +105,7 @@ export function LeadDetail({ id }: { id: string }) {
             </Button>
           )}
           {canConvert && (
-            <Button className="gap-1.5" onClick={convert}>
+            <Button className="gap-1.5" onClick={() => setConvertOpen(true)}>
               <UserCheck className="size-4" />
               生成客户
               <ArrowRight className="size-4" />
@@ -214,6 +212,9 @@ export function LeadDetail({ id }: { id: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {convertOpen && <ConvertLeadDialog leadId={lead.id} open={convertOpen} onOpenChange={setConvertOpen} />}
+      {editOpen && <LeadFormDialog leadId={lead.id} open={editOpen} onOpenChange={setEditOpen} />}
     </div>
   )
 }

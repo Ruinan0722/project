@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 
-export type Role = "customer" | "sdr" | "sales" | "leader" | "ops" | "admin"
+export type Role = "customer" | "sdr" | "sales" | "leader" | "ops" | "presales" | "admin"
 
 export type SectionKey =
   | "intake"
@@ -23,6 +23,7 @@ interface RoleConfig {
   desc: string
   sections: SectionKey[] // 可见（可进入）的模块
   editable: SectionKey[] // 可操作（新增 / 编辑 / 状态流转）的模块
+  advisorFeedback: boolean // 是否可新增 / 编辑商机的「顾问反馈」记录
   contractScope: ContractScope
   identity: { name?: string; dept?: string } // 用于合同等数据的范围过滤（演示用）
 }
@@ -33,22 +34,25 @@ export const ROLE_META: Record<Role, RoleConfig> = {
     desc: "仅填写并提交需求单",
     sections: ["intake"],
     editable: ["intake"],
+    advisorFeedback: false,
     contractScope: "none",
     identity: {},
   },
   sdr: {
     label: "SDR",
-    desc: "承接跟进线索，只读查看客户与需求",
+    desc: "新增跟进线索，只读查看客户与需求",
     sections: ["home", "leads", "customers", "requests", "dashboard"],
     editable: ["leads"],
+    advisorFeedback: false,
     contractScope: "none",
     identity: { name: "周 SDR" },
   },
   sales: {
     label: "销售",
-    desc: "维护客户、推进商机，查看本人签约合同",
+    desc: "编辑客户与商机字段，推进商机",
     sections: ["home", "customers", "requests", "opportunities", "contracts", "dashboard"],
     editable: ["customers", "requests", "opportunities"],
+    advisorFeedback: false,
     contractScope: "own",
     identity: { name: "李销售" },
   },
@@ -57,6 +61,7 @@ export const ROLE_META: Record<Role, RoleConfig> = {
     desc: "查看本部门经营数据与签约合同",
     sections: ["home", "customers", "requests", "opportunities", "contracts", "dashboard"],
     editable: ["customers", "requests", "opportunities"],
+    advisorFeedback: false,
     contractScope: "dept",
     identity: { dept: "海外事业部" },
   },
@@ -65,14 +70,25 @@ export const ROLE_META: Record<Role, RoleConfig> = {
     desc: "维护全部合同、配置系统",
     sections: ["home", "customers", "opportunities", "contracts", "dashboard", "settings"],
     editable: ["customers", "opportunities", "contracts", "settings"],
+    advisorFeedback: false,
     contractScope: "all",
     identity: {},
+  },
+  presales: {
+    label: "售前顾问",
+    desc: "仅查看商机，编辑顾问反馈记录",
+    sections: ["opportunities"],
+    editable: [],
+    advisorFeedback: true,
+    contractScope: "none",
+    identity: { name: "刘顾问" },
   },
   admin: {
     label: "管理员",
     desc: "拥有全部权限",
     sections: ["home", "leads", "customers", "requests", "opportunities", "contracts", "dashboard", "settings", "intake"],
     editable: ["home", "leads", "customers", "requests", "opportunities", "contracts", "dashboard", "settings", "intake"],
+    advisorFeedback: true,
     contractScope: "all",
     identity: {},
   },
@@ -85,6 +101,7 @@ interface RoleContextValue {
   setRole: (r: Role) => void
   canAccess: (s: SectionKey) => boolean
   canEdit: (s: SectionKey) => boolean
+  canEditAdvisor: boolean
   contractScope: ContractScope
   identity: { name?: string; dept?: string }
 }
@@ -114,6 +131,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         setRole,
         canAccess,
         canEdit,
+        canEditAdvisor: ROLE_META[role].advisorFeedback,
         contractScope: ROLE_META[role].contractScope,
         identity: ROLE_META[role].identity,
       }}

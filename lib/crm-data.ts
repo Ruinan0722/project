@@ -131,9 +131,12 @@ export const OPP_STAGE_META: Record<OppStage, { label: string; tone: string }> =
   lost: { label: "已输单", tone: "neutral" },
 }
 
-export const PROJECT_TYPES = ["GEO 基础优化", "GEO 深度优化", "GEO 诊断咨询", "内容代运营"] as const
+// 项目类型（可多选）：监测 / 排名优化 / 词条优化
+export const PROJECT_TYPES = ["监测", "排名优化", "词条优化"] as const
 export const OPT_PERIODS = ["3 个月", "6 个月", "12 个月"] as const
 export const LOST_STAGES = ["初步接触", "需求确认", "方案沟通", "报价谈判", "签署中"] as const
+// 销售负责人（演示用，用于线索分配）
+export const SALES_REPS = ["李销售", "陈商务", "赵销售", "钱销售"] as const
 
 export interface Opportunity {
   id: string
@@ -149,10 +152,11 @@ export interface Opportunity {
   expectedSignDate: string
   stage: OppStage
   owner: string
-  projectType: string
+  projectTypes: string[] // 项目类型（可多选：监测 / 排名优化 / 词条优化）
   primaryContactId: string
   requestIds: string[] // 关联需求单
-  notes: FollowUp[]
+  notes: FollowUp[] // 销售跟进记录
+  advisorNotes: FollowUp[] // 售前顾问反馈记录
   createdAt: string
   lastFollowAt: string
   // 输单信息
@@ -458,12 +462,15 @@ export const MOCK_OPPORTUNITIES: Opportunity[] = [
     expectedSignDate: "2026-07-10",
     stage: "signing",
     owner: "李销售",
-    projectType: "GEO 深度优化",
+    projectTypes: ["排名优化", "词条优化"],
     primaryContactId: "ct1",
     requestIds: ["1"],
     createdAt: "2026-06-13",
     lastFollowAt: "2026-06-20 16:02",
     notes: [{ id: "of1", author: "李销售", content: "合同条款基本确认，进入签署。", date: "2026-06-20 16:02" }],
+    advisorNotes: [
+      { id: "ad1", author: "刘顾问", content: "已评估目标平台词条覆盖，建议优先优化 ChatGPT 推荐位。", date: "2026-06-16 10:20" },
+    ],
   },
   {
     id: "o2",
@@ -479,12 +486,15 @@ export const MOCK_OPPORTUNITIES: Opportunity[] = [
     expectedSignDate: "2026-07-25",
     stage: "solution",
     owner: "陈商务",
-    projectType: "GEO 基础优化",
+    projectTypes: ["监测", "排名优化"],
     primaryContactId: "ct3",
     requestIds: ["2"],
     createdAt: "2026-06-15",
     lastFollowAt: "2026-06-15 15:40",
     notes: [{ id: "of2", author: "陈商务", content: "已发送初版方案，等待客户反馈。", date: "2026-06-15 15:40" }],
+    advisorNotes: [
+      { id: "ad2", author: "刘顾问", content: "客户当前品牌词排名偏低，建议先做监测基线再定优化策略。", date: "2026-06-16 14:00" },
+    ],
   },
   {
     id: "o3",
@@ -500,12 +510,13 @@ export const MOCK_OPPORTUNITIES: Opportunity[] = [
     expectedSignDate: "2026-08-05",
     stage: "demand",
     owner: "陈商务",
-    projectType: "GEO 诊断咨询",
+    projectTypes: ["监测"],
     primaryContactId: "ct4",
     requestIds: ["3"],
     createdAt: "2026-06-18",
     lastFollowAt: "2026-06-19 11:20",
     notes: [{ id: "of3", author: "陈商务", content: "需求待补充目标语言。", date: "2026-06-19 11:20" }],
+    advisorNotes: [],
   },
   {
     id: "o4",
@@ -521,12 +532,13 @@ export const MOCK_OPPORTUNITIES: Opportunity[] = [
     expectedSignDate: "2026-08-20",
     stage: "contact",
     owner: "李销售",
-    projectType: "GEO 深度优化",
+    projectTypes: ["排名优化", "词条优化"],
     primaryContactId: "ct5",
     requestIds: ["4"],
     createdAt: "2026-06-20",
     lastFollowAt: "2026-06-20 18:55",
     notes: [],
+    advisorNotes: [],
   },
   {
     id: "o5",
@@ -542,12 +554,15 @@ export const MOCK_OPPORTUNITIES: Opportunity[] = [
     expectedSignDate: "2026-06-30",
     stage: "won",
     owner: "陈商务",
-    projectType: "GEO 基础优化",
+    projectTypes: ["监测", "排名优化"],
     primaryContactId: "ct6",
     requestIds: ["7"],
     createdAt: "2026-06-15",
     lastFollowAt: "2026-06-23 10:15",
     notes: [{ id: "of4", author: "陈商务", content: "合同已签订，进入交付。", date: "2026-06-23 10:15" }],
+    advisorNotes: [
+      { id: "ad3", author: "刘顾问", content: "交付阶段已输出监测周报模板，词条优化清单已同步交付团队。", date: "2026-06-24 09:30" },
+    ],
   },
   {
     id: "o6",
@@ -563,12 +578,13 @@ export const MOCK_OPPORTUNITIES: Opportunity[] = [
     expectedSignDate: "2026-06-14",
     stage: "lost",
     owner: "李销售",
-    projectType: "GEO 诊断咨询",
+    projectTypes: ["监测"],
     primaryContactId: "ct5",
     requestIds: [],
     createdAt: "2026-06-01",
     lastFollowAt: "2026-06-14 17:45",
     notes: [{ id: "of5", author: "李销售", content: "客户预算调整，本期暂不推进。", date: "2026-06-14 17:45" }],
+    advisorNotes: [],
     lostStage: "报价谈判",
     lostReason: "预算不足，本年度无排期",
     competitor: "竞品 A",

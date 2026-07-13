@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Search, UserCheck, Ban } from "lucide-react"
+import { Search, UserCheck, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCrm } from "./store"
 import { LEAD_STATUS_META, LEAD_SOURCES, type LeadStatus } from "@/lib/crm-data"
 import { Pill, StatCards, FilterChips, EmptyState } from "./ui"
-import { ConvertLeadDialog } from "./lead-actions"
+import { ConvertLeadDialog, LeadFormDialog } from "./lead-actions"
 import { useRole } from "@/components/app/role-context"
 
 const LEVEL_TONE: Record<string, string> = { A: "success", B: "info", C: "warning", D: "neutral" }
@@ -21,6 +21,7 @@ export function LeadList() {
   const [status, setStatus] = useState<LeadStatus | "all">("all")
   const [source, setSource] = useState<string>("all")
   const [convertId, setConvertId] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
 
   const stats = useMemo(
     () => ({
@@ -64,18 +65,26 @@ export function LeadList() {
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="pl-9" placeholder="搜索公司或联系人" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
           </div>
-          <select
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            className="h-9 rounded-lg border border-border bg-card px-3 text-sm"
-          >
-            <option value="all">全部来源</option>
-            {LEAD_SOURCES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              className="h-9 rounded-lg border border-border bg-card px-3 text-sm"
+            >
+              <option value="all">全部来源</option>
+              {LEAD_SOURCES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            {editable && (
+              <Button className="gap-1.5" onClick={() => setFormOpen(true)}>
+                <Plus className="size-4" />
+                新增线索
+              </Button>
+            )}
+          </div>
         </div>
         <div className="mt-3">
           <FilterChips
@@ -170,6 +179,7 @@ export function LeadList() {
           onOpenChange={(o) => !o && setConvertId(null)}
         />
       )}
+      {formOpen && <LeadFormDialog open={formOpen} onOpenChange={setFormOpen} />}
     </div>
   )
 }

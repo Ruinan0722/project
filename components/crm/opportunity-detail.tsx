@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { ArrowLeft, Ban, Check, MessageSquarePlus } from "lucide-react"
+import { ArrowLeft, Ban, Check, Headset, MessageSquarePlus, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
@@ -11,24 +11,25 @@ import { Pill, InfoRow, EmptyState } from "./ui"
 import { useCrm } from "./store"
 import { useRole } from "@/components/app/role-context"
 import {
-  OPP_STAGES,
   OPP_STAGE_META,
   goalOrPlatform,
   money,
   type OppStage,
 } from "@/lib/crm-data"
-import { LostOpportunityDialog } from "./opportunity-actions"
+import { LostOpportunityDialog, EditOpportunityDialog } from "./opportunity-actions"
 
 // 正向阶段流转顺序（不含输单）
 const FLOW: OppStage[] = ["contact", "demand", "solution", "quote", "signing", "won"]
 
 export function OpportunityDetail({ id }: { id: string }) {
-  const { getOpportunity, getCustomer, setOppStage, addOpportunityNote, contracts } = useCrm()
-  const { canEdit } = useRole()
+  const { getOpportunity, getCustomer, setOppStage, addOpportunityNote, addAdvisorNote, contracts } = useCrm()
+  const { canEdit, canEditAdvisor } = useRole()
   const editable = canEdit("opportunities")
   const opp = getOpportunity(id)
   const [note, setNote] = useState("")
+  const [advisorNote, setAdvisorNote] = useState("")
   const [lostOpen, setLostOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   if (!opp) {
     return (
@@ -68,6 +69,16 @@ export function OpportunityDetail({ id }: { id: string }) {
     addOpportunityNote(opp.id, note.trim())
     setNote("")
     toast.success("跟进记录已添加")
+  }
+
+  function submitAdvisorNote() {
+    if (!advisorNote.trim()) {
+      toast.error("请输入顾问反馈内容")
+      return
+    }
+    addAdvisorNote(opp.id, advisorNote.trim())
+    setAdvisorNote("")
+    toast.success("顾问反馈已添加")
   }
 
   return (
