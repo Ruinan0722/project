@@ -3,18 +3,44 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { FileEdit, FileText, Lock, Menu, Settings, Sparkles, X } from "lucide-react"
+import {
+  Briefcase,
+  FileEdit,
+  FileText,
+  FileSignature,
+  LayoutDashboard,
+  Lock,
+  Menu,
+  Settings,
+  Sparkles,
+  Target,
+  Users,
+  UserPlus,
+  X,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLE_META, useRole, type Role, type SectionKey } from "./role-context"
 
 const NAV: { key: SectionKey; href: string; label: string; desc: string; icon: typeof FileText }[] = [
+  { key: "home", href: "/home", label: "首页工作台", desc: "待办与经营概览", icon: LayoutDashboard },
+  { key: "leads", href: "/leads", label: "线索管理", desc: "承接与跟进线索", icon: UserPlus },
+  { key: "customers", href: "/customers", label: "客户管理", desc: "客户与联系人档案", icon: Users },
+  { key: "requests", href: "/requests", label: "需求管理", desc: "需求收集与确认", icon: FileText },
+  { key: "opportunities", href: "/opportunities", label: "商机管理", desc: "销售机会推进", icon: Target },
+  { key: "contracts", href: "/contracts", label: "合同管理", desc: "签约与合同信息", icon: FileSignature },
+  { key: "dashboard", href: "/dashboard", label: "数据看板", desc: "经营数据统计", icon: Briefcase },
   { key: "intake", href: "/intake", label: "客户需求填报", desc: "填写并提交需求", icon: FileEdit },
-  { key: "requests", href: "/requests", label: "客户需求管理", desc: "需求列表与详情", icon: FileText },
-  { key: "settings", href: "/settings", label: "系统配置", desc: "表单与权限设置", icon: Settings },
+  { key: "settings", href: "/settings", label: "系统设置", desc: "人员、权限与配置", icon: Settings },
 ]
 
 function sectionOf(pathname: string): SectionKey {
+  if (pathname.startsWith("/home")) return "home"
+  if (pathname.startsWith("/leads")) return "leads"
+  if (pathname.startsWith("/customers")) return "customers"
   if (pathname.startsWith("/requests")) return "requests"
+  if (pathname.startsWith("/opportunities")) return "opportunities"
+  if (pathname.startsWith("/contracts")) return "contracts"
+  if (pathname.startsWith("/dashboard")) return "dashboard"
   if (pathname.startsWith("/settings")) return "settings"
   return "intake"
 }
@@ -35,8 +61,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Sparkles className="size-4" />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-semibold">海外 GEO 需求系统</p>
-          <p className="text-[11px] text-sidebar-foreground/60">客户需求收集平台</p>
+          <p className="text-sm font-semibold">GEO 客户经营平台</p>
+          <p className="text-[11px] text-sidebar-foreground/60">线索 · 客户 · 商机 · 合同</p>
         </div>
       </div>
 
@@ -117,7 +143,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-sidebar px-4 py-3 text-sidebar-foreground lg:hidden print:hidden">
         <div className="flex items-center gap-2">
           <Sparkles className="size-4" />
-          <span className="text-sm font-semibold">海外 GEO 需求系统</span>
+          <span className="text-sm font-semibold">GEO 客户经营平台</span>
         </div>
         <button onClick={() => setMobileOpen(true)} aria-label="打开菜单">
           <Menu className="size-5" />

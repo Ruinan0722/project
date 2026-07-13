@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, GripVertical, Plus, ShieldCheck, Tags, UserCog, X } from "lucide-react"
+import { Check, Eye, GripVertical, Plus, ShieldCheck, Tags, UserCog, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -26,8 +26,8 @@ export function SettingsView() {
   return (
     <div>
       <header className="border-b border-border bg-card/60 px-5 py-5 lg:px-8">
-        <h1 className="text-xl font-semibold tracking-tight">系统配置</h1>
-        <p className="mt-1 text-sm text-muted-foreground">配置客户需求表单字段、选项库，以及用户与角色权限。</p>
+        <h1 className="text-xl font-semibold tracking-tight">系统设置</h1>
+        <p className="mt-1 text-sm text-muted-foreground">配置客户需求表单字段、选项库，以及人员与角色权限。</p>
         <div className="mt-4 flex gap-1 overflow-x-auto">
           {TABS.map((t) => (
             <button
@@ -233,41 +233,65 @@ function TagEditor({ title, initial, placeholder }: { title: string; initial: st
 
 /* ===== 用户与权限 ===== */
 
+type UserRoleKey = "sdr" | "sales" | "leader" | "ops" | "presales" | "admin"
+
 interface UserRow {
   id: string
   name: string
   email: string
-  role: "customer" | "staff" | "admin"
+  role: UserRoleKey
 }
 
-const ROLE_LABEL: Record<UserRow["role"], string> = {
-  customer: "客户",
-  staff: "内部人员",
+const ROLE_ORDER: UserRoleKey[] = ["sdr", "sales", "leader", "ops", "presales", "admin"]
+const ROLE_LABEL: Record<UserRoleKey, string> = {
+  sdr: "SDR",
+  sales: "销售",
+  leader: "销售 Leader",
+  ops: "销售运营",
+  presales: "售前顾问",
   admin: "管理员",
 }
 
 const INITIAL_USERS: UserRow[] = [
-  { id: "u1", name: "李销售", email: "li@geo.com", role: "staff" },
-  { id: "u2", name: "陈商务", email: "chen@geo.com", role: "staff" },
-  { id: "u3", name: "王管理", email: "admin@geo.com", role: "admin" },
-  { id: "u4", name: "张三（客户）", email: "zhang@bytedance.com", role: "customer" },
+  { id: "u1", name: "周 SDR", email: "sdr@geo.com", role: "sdr" },
+  { id: "u2", name: "李销售", email: "li@geo.com", role: "sales" },
+  { id: "u3", name: "陈商务", email: "chen@geo.com", role: "sales" },
+  { id: "u4", name: "王 Leader", email: "leader@geo.com", role: "leader" },
+  { id: "u5", name: "赵运营", email: "ops@geo.com", role: "ops" },
+  { id: "u6", name: "刘顾问", email: "advisor@geo.com", role: "presales" },
+  { id: "u7", name: "孙管理", email: "admin@geo.com", role: "admin" },
 ]
 
-const PERMISSION_MATRIX: { feature: string; customer: boolean; staff: boolean; admin: boolean }[] = [
-  { feature: "客户需求填报", customer: true, staff: true, admin: true },
-  { feature: "客户需求管理（列表 / 详情）", customer: false, staff: true, admin: true },
-  { feature: "修改状态 / 分配跟进人", customer: false, staff: true, admin: true },
-  { feature: "导出 Excel / 下载 PDF", customer: false, staff: true, admin: true },
-  { feature: "系统配置（字段 / 选项 / 权限）", customer: false, staff: false, admin: true },
+type Perm = boolean | "view"
+// ○ 表示仅可查看（只读），✓ 表示可操作
+const PERMISSION_MATRIX: {
+  feature: string
+  sdr: Perm
+  sales: Perm
+  leader: Perm
+  ops: Perm
+  presales: Perm
+  admin: Perm
+}[] = [
+  { feature: "线索管理（新增 / 跟进 / 转客户）", sdr: true, sales: false, leader: false, ops: true, presales: false, admin: true },
+  { feature: "客户管理（列表 / 详情 / 编辑）", sdr: "view", sales: true, leader: true, ops: true, presales: false, admin: true },
+  { feature: "商机管理（创建 / 推进 / 编辑 / 输单）", sdr: false, sales: true, leader: true, ops: false, presales: "view", admin: true },
+  { feature: "商机顾问反馈（新增 / 编辑）", sdr: false, sales: false, leader: false, ops: false, presales: true, admin: true },
+  { feature: "需求管理（确认 / 转项目）", sdr: "view", sales: true, leader: true, ops: true, presales: false, admin: true },
+  { feature: "合同管理（查看范围）", sdr: false, sales: "view", leader: "view", ops: true, presales: false, admin: true },
+  { feature: "合同新增 / 编辑字段", sdr: false, sales: false, leader: false, ops: true, presales: false, admin: true },
+  { feature: "数据看板（团队维度）", sdr: false, sales: false, leader: true, ops: true, presales: false, admin: true },
+  { feature: "系统设置（人员 / 权限 / 配置）", sdr: false, sales: false, leader: false, ops: false, presales: false, admin: true },
 ]
 
 function UsersConfig() {
   const [users, setUsers] = useState(INITIAL_USERS)
 
   function cycleRole(id: string) {
-    const order: UserRow["role"][] = ["customer", "staff", "admin"]
     setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, role: order[(order.indexOf(u.role) + 1) % order.length] } : u)),
+      prev.map((u) =>
+        u.id === id ? { ...u, role: ROLE_ORDER[(ROLE_ORDER.indexOf(u.role) + 1) % ROLE_ORDER.length] } : u,
+      ),
     )
   }
 
@@ -315,8 +339,11 @@ function UsersConfig() {
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
                 <th className="px-4 py-3 font-medium">功能</th>
-                <th className="px-4 py-3 text-center font-medium">客户</th>
-                <th className="px-4 py-3 text-center font-medium">内部人员</th>
+                <th className="px-4 py-3 text-center font-medium">SDR</th>
+                <th className="px-4 py-3 text-center font-medium">销售</th>
+                <th className="px-4 py-3 text-center font-medium">Leader</th>
+                <th className="px-4 py-3 text-center font-medium">销售运营</th>
+                <th className="px-4 py-3 text-center font-medium">售前顾问</th>
                 <th className="px-4 py-3 text-center font-medium">管理员</th>
               </tr>
             </thead>
@@ -324,8 +351,11 @@ function UsersConfig() {
               {PERMISSION_MATRIX.map((row) => (
                 <tr key={row.feature} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">{row.feature}</td>
-                  <PermCell allowed={row.customer} />
-                  <PermCell allowed={row.staff} />
+                  <PermCell allowed={row.sdr} />
+                  <PermCell allowed={row.sales} />
+                  <PermCell allowed={row.leader} />
+                  <PermCell allowed={row.ops} />
+                  <PermCell allowed={row.presales} />
                   <PermCell allowed={row.admin} />
                 </tr>
               ))}
@@ -337,10 +367,15 @@ function UsersConfig() {
   )
 }
 
-function PermCell({ allowed }: { allowed: boolean }) {
+function PermCell({ allowed }: { allowed: boolean | "view" }) {
   return (
     <td className="px-4 py-3 text-center">
-      {allowed ? (
+      {allowed === "view" ? (
+        <span className="mx-auto inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">
+          <Eye className="size-3" />
+          仅查看
+        </span>
+      ) : allowed ? (
         <Check className="mx-auto size-4 text-primary" />
       ) : (
         <X className="mx-auto size-4 text-muted-foreground/40" />

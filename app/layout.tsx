@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { AdminProvider } from '@/components/admin/store'
+import { CrmProvider } from '@/components/crm/store'
 import { RoleProvider } from '@/components/app/role-context'
 import { AppShell } from '@/components/app/app-shell'
 import './globals.css'
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: '海外 GEO 客户需求收集系统',
-  description: '客户进入海外 GEO 项目的统一入口：填写一次基础信息，复用于诊断、SOW 与项目交付。',
+  title: 'GEO 客户经营与需求管理平台',
+  description: '打通线索、客户、联系人、商机、需求与合同的统一客户经营平台，实现从线索到合同的标准化闭环。',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -57,7 +58,9 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <RoleProvider>
           <AdminProvider>
-            <AppShell>{children}</AppShell>
+            <CrmProvider>
+              <AppShell>{children}</AppShell>
+            </CrmProvider>
           </AdminProvider>
         </RoleProvider>
         <Toaster richColors position="top-center" />
