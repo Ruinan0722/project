@@ -2,31 +2,66 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { Plus, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useCrm } from "./store"
-import { CONTRACT_STATUS_META, PROJECT_STATUS_META, money, type ContractStatus } from "@/lib/crm-data"
+import { useRole } from "@/components/app/role-context"
+import {
+  CONTRACT_STATUS_META,
+  CONTRACT_TYPES,
+  PROJECT_STATUS_META,
+  SIGN_TYPES,
+  money,
+  type ContractStatus,
+} from "@/lib/crm-data"
 import { Pill, StatCards, FilterChips, EmptyState } from "./ui"
 
 export function ContractList() {
   const { contracts } = useCrm()
+  const { canEdit, contractScope, identity } = useRole()
+  const canEditContract = canEdit("contracts")
   const [keyword, setKeyword] = useState("")
   const [status, setStatus] = useState<ContractStatus | "all">("all")
+  const [createOpen, setCreateOpen] = useState(false)
+
+  // 按角色数据范围过滤：全部 / 本部门 / 仅本人签约
+  const scoped = useMemo(() => {
+    if (contractScope === "all") return contracts
+    if (contractScope === "own") return contracts.filter((c) => c.owner === identity.name)
+    if (contractScope === "dept") return contracts.filter((c) => c.dept === identity.dept)
+    return []
+  }, [contracts, contractScope, identity])
+
+  const scopeHint =
+    contractScope === "own"
+      ? "当前身份仅可查看本人签约的合同"
+      : contractScope === "dept"
+        ? `当前身份仅可查看本部门（${identity.dept}）的合同`
+        : null
 
   const stats = useMemo(() => {
-    const signed = contracts.filter((c) => c.status === "signed")
+    const signed = scoped.filter((c) => c.status === "signed")
     return {
-      total: contracts.length,
+      total: scoped.length,
       signed: signed.length,
-      pending: contracts.filter((c) => c.status === "pending" || c.status === "signing").length,
+      pending: scoped.filter((c) => c.status === "pending" || c.status === "signing").length,
       amount: signed.reduce((s, c) => s + c.amount, 0),
     }
-  }, [contracts])
+  }, [scoped])
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
-    return contracts.filter((c) => {
+    return scoped.filter((c) => {
       const ms = status === "all" || c.status === status
       const mkw =
         !kw ||
@@ -35,7 +70,7 @@ export function ContractList() {
         c.code.toLowerCase().includes(kw)
       return ms && mkw
     })
-  }, [contracts, keyword, status])
+  }, [scoped, keyword, status])
 
   return (
     <div className="space-y-6">
@@ -49,14 +84,22 @@ export function ContractList() {
       />
 
       <div className="rounded-xl border border-border bg-card p-4">
-        <div className="relative w-full lg:max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="搜索合同名称、客户或编号"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full lg:max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="搜索合同名称、客户或编号"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+          </div>
+          {canEditContract && (
+            <Button className="gap-1.5 self-start lg:self-auto" onClick={() => setCreateOpen(true)}>
+              <Plus className="size-4" />
+              新增合同
+            </Button>
+          )}
         </div>
         <div className="mt-3">
           <FilterChips
@@ -72,6 +115,7 @@ export function ContractList() {
             ]}
           />
         </div>
+        {scopeHint && <p className="mt-3 text-xs text-muted-foreground">{scopeHint}</p>}
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -124,6 +168,135 @@ export function ContractList() {
         {filtered.length === 0 && <EmptyState text="没有符合条件的合同" />}
       </div>
       <p className="text-center text-xs text-muted-foreground">共 {filtered.length} 份合同</p>
+
+      {createOpen && <NewContractDialog open={createOpen} onOpenChange={setCreateOpen} />}
     </div>
+  )
+}
+
+function NewContractDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const router = useRouter()
+  const { customers, createContract } = useCrm()
+  const [form, setForm] = useState({
+    name: "",
+    customerId: "",
+    type: CONTRACT_TYPES[0] as string,
+    signType: SIGN_TYPES[0] as string,
+    owner: "",
+    dept: "",
+    amount: "",
+  })
+
+  function submit() {
+    if (!form.name.trim()) {
+      toast.error("请填写合同名称")
+      return
+    }
+    if (!form.customerId) {
+      toast.error("请选择关联客户")
+      return
+    }
+    const cust = customers.find((c) => c.id === form.customerId)
+    const id = createContract({
+      name: form.name.trim(),
+      customerId: form.customerId,
+      company: cust?.companyName,
+      region: cust?.region,
+      city: cust?.city,
+      type: form.type,
+      signType: form.signType,
+      owner: form.owner.trim() || cust?.owner || "",
+      dept: form.dept.trim(),
+      amount: Number(form.amount) || 0,
+    })
+    onOpenChange(false)
+    toast.success("合同已创建")
+    router.push(`/contracts/${id}`)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>新增合同</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">合同名称</label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="如：Anker 品牌 GEO 优化服务合同" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">关联客户</label>
+            <select
+              value={form.customerId}
+              onChange={(e) => setForm({ ...form, customerId: e.target.value })}
+              className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm"
+            >
+              <option value="">请选择客户</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.companyName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">合同类型</label>
+              <select
+                value={form.type}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm"
+              >
+                {CONTRACT_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">签约类型</label>
+              <select
+                value={form.signType}
+                onChange={(e) => setForm({ ...form, signType: e.target.value })}
+                className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm"
+              >
+                {SIGN_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">销售负责人</label>
+              <Input value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} placeholder="选填" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">签约部门</label>
+              <Input value={form.dept} onChange={(e) => setForm({ ...form, dept: e.target.value })} placeholder="选填" />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">合同金额（元）</label>
+            <Input
+              inputMode="numeric"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: e.target.value.replace(/[^0-9]/g, "") })}
+              placeholder="选填，可在签署时填写"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            取消
+          </Button>
+          <Button onClick={submit}>创建合同</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

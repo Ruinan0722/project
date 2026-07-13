@@ -19,11 +19,14 @@ import {
 } from "@/components/ui/dialog"
 import { Pill, InfoRow, EmptyState } from "./ui"
 import { useCrm } from "./store"
+import { useRole } from "@/components/app/role-context"
 import { LEAD_STATUS_META, type Lead } from "@/lib/crm-data"
 
 export function LeadDetail({ id }: { id: string }) {
   const router = useRouter()
   const { getLead, addLeadNote, convertLeadToCustomer, markLeadInvalid } = useCrm()
+  const { canEdit } = useRole()
+  const editable = canEdit("leads")
   const lead = getLead(id)
 
   const [note, setNote] = useState("")
@@ -73,7 +76,7 @@ export function LeadDetail({ id }: { id: string }) {
     toast.success("线索已标记为无效")
   }
 
-  const canConvert = lead.status !== "converted" && lead.status !== "invalid"
+  const canConvert = editable && lead.status !== "converted" && lead.status !== "invalid"
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-6 lg:px-8">

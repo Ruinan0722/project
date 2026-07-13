@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog"
 import { Pill, InfoRow, EmptyState } from "./ui"
 import { useCrm } from "./store"
+import { useRole } from "@/components/app/role-context"
 import { useAdmin } from "@/components/admin/store"
 import { CUSTOMER_STATUS_META, money, type Contact, type CustomerStatus } from "@/lib/crm-data"
 import { OPP_STAGE_META } from "@/lib/crm-data"
@@ -48,6 +49,9 @@ export function CustomerDetail({ id }: { id: string }) {
     updateContact,
   } = useCrm()
   const { requests } = useAdmin()
+  const { canEdit } = useRole()
+  const canEditCustomer = canEdit("customers")
+  const canEditOpp = canEdit("opportunities")
   const customer = getCustomer(id)
 
   const [note, setNote] = useState("")
@@ -126,24 +130,30 @@ export function CustomerDetail({ id }: { id: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={customer.status}
-            onChange={(e) => {
-              updateCustomer(customer.id, { status: e.target.value as CustomerStatus })
-              toast.success("客户状态已更新")
-            }}
-            className="h-9 rounded-lg border border-border bg-card px-3 text-sm"
-          >
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {CUSTOMER_STATUS_META[s].label}
-              </option>
-            ))}
-          </select>
-          <Button className="gap-1.5" onClick={() => setOppOpen(true)}>
-            <Target className="size-4" />
-            创建商机
-          </Button>
+          {canEditCustomer ? (
+            <select
+              value={customer.status}
+              onChange={(e) => {
+                updateCustomer(customer.id, { status: e.target.value as CustomerStatus })
+                toast.success("客户状态已更新")
+              }}
+              className="h-9 rounded-lg border border-border bg-card px-3 text-sm"
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {CUSTOMER_STATUS_META[s].label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <Pill label={meta.label} tone={meta.tone} />
+          )}
+          {canEditOpp && (
+            <Button className="gap-1.5" onClick={() => setOppOpen(true)}>
+              <Target className="size-4" />
+              创建商机
+            </Button>
+          )}
         </div>
       </div>
 
@@ -185,17 +195,20 @@ export function CustomerDetail({ id }: { id: string }) {
 
         {/* 联系人 */}
         <TabsContent value="contacts" className="mt-4">
-          <div className="mb-3 flex justify-end">
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setContactOpen(true)}>
-              <UserPlus className="size-4" />
-              添加联系人
-            </Button>
-          </div>
+          {canEditCustomer && (
+            <div className="mb-3 flex justify-end">
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setContactOpen(true)}>
+                <UserPlus className="size-4" />
+                添加联系人
+              </Button>
+            </div>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             {customer.contacts.map((ct) => (
               <ContactCard
                 key={ct.id}
                 contact={ct}
+                editable={canEditCustomer}
                 onSetPrimary={() => {
                   setPrimaryContact(customer.id, ct.id)
                   toast.success(`已将 ${ct.name} 设为主联系人`)
@@ -255,19 +268,21 @@ export function CustomerDetail({ id }: { id: string }) {
         {/* 跟进记录 */}
         <TabsContent value="follow" className="mt-4">
           <div className="rounded-2xl border border-border bg-card p-5">
-            <div className="flex flex-col gap-2.5 rounded-xl bg-secondary/40 p-3 sm:flex-row sm:items-end">
-              <Textarea
-                rows={2}
-                placeholder="记录本次与客户的沟通…"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="flex-1"
-              />
-              <Button className="gap-1.5" onClick={submitNote}>
-                <MessageSquarePlus className="size-4" />
-                添加
-              </Button>
-            </div>
+            {canEditCustomer && (
+              <div className="flex flex-col gap-2.5 rounded-xl bg-secondary/40 p-3 sm:flex-row sm:items-end">
+                <Textarea
+                  rows={2}
+                  placeholder="记录本次与客户的沟通…"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  className="flex-1"
+                />
+                <Button className="gap-1.5" onClick={submitNote}>
+                  <MessageSquarePlus className="size-4" />
+                  添加
+                </Button>
+              </div>
+            )}
             <div className="mt-4 space-y-3">
               {customer.notes.length === 0 ? (
                 <EmptyState text="暂无跟进记录" />
@@ -368,10 +383,12 @@ export function CustomerDetail({ id }: { id: string }) {
 
 function ContactCard({
   contact,
+  editable,
   onSetPrimary,
   onToggleActive,
 }: {
   contact: Contact
+  editable: boolean
   onSetPrimary: () => void
   onToggleActive: () => void
 }) {
@@ -398,17 +415,19 @@ function ContactCard({
           <dd className="truncate">{contact.email || "—"}</dd>
         </div>
       </dl>
-      <div className="mt-3 flex gap-2">
-        {!contact.isPrimary && contact.active && (
-          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={onSetPrimary}>
-            <Star className="size-3" />
-            设为主联系人
+      {editable && (
+        <div className="mt-3 flex gap-2">
+          {!contact.isPrimary && contact.active && (
+            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={onSetPrimary}>
+              <Star className="size-3" />
+              设为主联系人
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={onToggleActive}>
+            {contact.active ? "标记离职" : "恢复在职"}
           </Button>
-        )}
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={onToggleActive}>
-          {contact.active ? "标记离职" : "恢复在职"}
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   )
 }

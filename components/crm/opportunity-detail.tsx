@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { Pill, InfoRow, EmptyState } from "./ui"
 import { useCrm } from "./store"
+import { useRole } from "@/components/app/role-context"
 import {
   OPP_STAGES,
   OPP_STAGE_META,
@@ -23,6 +24,8 @@ const FLOW: OppStage[] = ["contact", "demand", "solution", "quote", "signing", "
 
 export function OpportunityDetail({ id }: { id: string }) {
   const { getOpportunity, getCustomer, setOppStage, addOpportunityNote, contracts } = useCrm()
+  const { canEdit } = useRole()
+  const editable = canEdit("opportunities")
   const opp = getOpportunity(id)
   const [note, setNote] = useState("")
   const [lostOpen, setLostOpen] = useState(false)
@@ -93,7 +96,7 @@ export function OpportunityDetail({ id }: { id: string }) {
             {opp.projectType} · 负责人：{opp.owner}
           </p>
         </div>
-        {!isClosed && (
+        {!isClosed && editable && (
           <div className="flex items-center gap-2">
             <Button variant="outline" className="gap-1.5 text-destructive" onClick={() => setLostOpen(true)}>
               <Ban className="size-4" />
@@ -181,7 +184,7 @@ export function OpportunityDetail({ id }: { id: string }) {
         <div className="lg:col-span-1">
           <div className="rounded-2xl border border-border bg-card p-5">
             <h2 className="text-sm font-semibold">跟进记录</h2>
-            {!isClosed && (
+            {!isClosed && editable && (
               <div className="mt-3 space-y-2.5 rounded-xl bg-secondary/40 p-3">
                 <Textarea rows={3} placeholder="记录商机进展…" value={note} onChange={(e) => setNote(e.target.value)} />
                 <Button size="sm" className="w-full gap-1.5" onClick={submitNote}>

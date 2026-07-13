@@ -54,6 +54,7 @@ interface CrmContextValue {
   setOppStage: (id: string, stage: OppStage) => void
   markOppLost: (id: string, info: { lostStage: string; lostReason: string; competitor: string }) => void
   // 合同
+  createContract: (data: Partial<Contract>) => string
   updateContract: (id: string, patch: Partial<Contract>) => void
 }
 
@@ -293,6 +294,42 @@ export function CrmProvider({ children }: { children: ReactNode }) {
   )
 
   // ===== 合同 =====
+  const createContract = useCallback(
+    (data: Partial<Contract>): string => {
+      const id = rid("ct-")
+      const cust = data.customerId ? customers.find((c) => c.id === data.customerId) : undefined
+      const contract: Contract = {
+        id,
+        code: data.code ?? "",
+        name: data.name ?? "新建合同",
+        customerId: data.customerId ?? "",
+        company: data.company ?? cust?.companyName ?? "",
+        region: data.region ?? cust?.region ?? "",
+        city: data.city ?? cust?.city ?? "",
+        type: data.type ?? "新签",
+        signType: data.signType ?? "线上电子签",
+        status: data.status ?? "pending",
+        projectStatus: data.projectStatus ?? "not_started",
+        signSubject: data.signSubject ?? "",
+        signer: data.signer ?? "",
+        owner: data.owner ?? "",
+        signerManager: data.signerManager ?? "",
+        dept: data.dept ?? "",
+        amount: data.amount ?? 0,
+        effectiveDate: data.effectiveDate ?? "",
+        dualSignDate: data.dualSignDate ?? "",
+        validMonths: data.validMonths ?? 0,
+        endDate: data.endDate ?? "",
+        attachments: data.attachments ?? [],
+        opportunityId: data.opportunityId ?? "",
+        createdAt: nowDate(),
+      }
+      setContracts((prev) => [contract, ...prev])
+      return id
+    },
+    [customers],
+  )
+
   const updateContract = useCallback((id: string, patch: Partial<Contract>) => {
     setContracts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
   }, [])
@@ -321,6 +358,7 @@ export function CrmProvider({ children }: { children: ReactNode }) {
       createOpportunity,
       setOppStage,
       markOppLost,
+      createContract,
       updateContract,
     }),
     [
@@ -346,6 +384,7 @@ export function CrmProvider({ children }: { children: ReactNode }) {
       createOpportunity,
       setOppStage,
       markOppLost,
+      createContract,
       updateContract,
     ],
   )

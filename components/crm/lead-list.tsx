@@ -9,12 +9,14 @@ import { useCrm } from "./store"
 import { LEAD_STATUS_META, LEAD_SOURCES, type LeadStatus } from "@/lib/crm-data"
 import { Pill, StatCards, FilterChips, EmptyState } from "./ui"
 import { ConvertLeadDialog } from "./lead-actions"
-import { toast } from "sonner"
+import { useRole } from "@/components/app/role-context"
 
 const LEVEL_TONE: Record<string, string> = { A: "success", B: "info", C: "warning", D: "neutral" }
 
 export function LeadList() {
   const { leads } = useCrm()
+  const { canEdit } = useRole()
+  const editable = canEdit("leads")
   const [keyword, setKeyword] = useState("")
   const [status, setStatus] = useState<LeadStatus | "all">("all")
   const [source, setSource] = useState<string>("all")
@@ -132,7 +134,7 @@ export function LeadList() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1.5">
-                      {l.status !== "converted" && l.status !== "invalid" && (
+                      {editable && l.status !== "converted" && l.status !== "invalid" && (
                         <Button size="sm" className="gap-1" onClick={() => setConvertId(l.id)}>
                           <UserCheck className="size-3.5" />
                           生成客户
