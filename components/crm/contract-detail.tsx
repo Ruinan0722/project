@@ -15,8 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Pill, InfoRow, EmptyState } from "./ui"
+import { Pill, InfoRow } from "./ui"
 import { useCrm } from "./store"
+import { useRole } from "@/components/app/role-context"
 import {
   CONTRACT_STATUS_META,
   PROJECT_STATUS_META,
@@ -35,8 +36,11 @@ function genCode() {
 
 export function ContractDetail({ id }: { id: string }) {
   const { getContract, getCustomer, updateContract } = useCrm()
+  const { canEdit } = useRole()
+  const editable = canEdit("contracts")
   const contract = getContract(id)
   const [signOpen, setSignOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   if (!contract) {
     return (
@@ -70,30 +74,36 @@ export function ContractDetail({ id }: { id: string }) {
           </div>
           <p className="mt-1 font-mono text-sm text-muted-foreground">{contract.code || "编号待生成"}</p>
         </div>
-        <div className="flex items-center gap-2">
-          {(contract.status === "pending" || contract.status === "signing") && (
-            <Button className="gap-1.5" onClick={() => setSignOpen(true)}>
-              <Check className="size-4" />
-              完成签署
+        {editable && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-1.5" onClick={() => setEditOpen(true)}>
+              <Pencil className="size-4" />
+              编辑合同
             </Button>
-          )}
-          {contract.status === "signed" && (
-            <select
-              value={contract.projectStatus}
-              onChange={(e) => {
-                updateContract(contract.id, { projectStatus: e.target.value as ProjectStatus })
-                toast.success("项目状态已更新")
-              }}
-              className="h-9 rounded-lg border border-border bg-card px-3 text-sm"
-            >
-              {PROJECT_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  项目：{PROJECT_STATUS_META[s].label}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+            {(contract.status === "pending" || contract.status === "signing") && (
+              <Button className="gap-1.5" onClick={() => setSignOpen(true)}>
+                <Check className="size-4" />
+                完成签署
+              </Button>
+            )}
+            {contract.status === "signed" && (
+              <select
+                value={contract.projectStatus}
+                onChange={(e) => {
+                  updateContract(contract.id, { projectStatus: e.target.value as ProjectStatus })
+                  toast.success("项目状态已更新")
+                }}
+                className="h-9 rounded-lg border border-border bg-card px-3 text-sm"
+              >
+                {PROJECT_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    项目：{PROJECT_STATUS_META[s].label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
       </div>
 
       <Tabs defaultValue="basic" className="mt-6">
@@ -197,7 +207,115 @@ export function ContractDetail({ id }: { id: string }) {
       {signOpen && (
         <SignContractDialog contract={contract} open={signOpen} onOpenChange={setSignOpen} onGenCode={genCode} />
       )}
+      {editOpen && <EditContractDialog contract={contract} open={editOpen} onOpenChange={setEditOpen} />}
     </div>
+  )
+}
+
+function EditContractDialog({
+  contract,
+  open,
+  onOpenChange,
+}: {
+  contract: Contract
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const { updateContract } = useCrm()
+  const [form, setForm] = useState({
+    name: contract.name,
+    type: contract.type,
+    signType: contract.signType,
+    signSubject: contract.signSubject,
+    signer: contract.signer,
+    owner: contract.owner,
+    signerManager: contract.signerManager,
+    dept: contract.dept,
+    amount: contract.amount ? String(contract.amount) : "",
+    effectiveDate: contract.effectiveDate,
+    validMonths: contract.validMonths ? String(contract.validMonths) : "",
+  })
+
+  function submit() {
+    if (!form.name.trim()) {
+      toast.error("请填写合同名称")
+      return
+    }
+    const months = Number(form.validMonths) || 0
+    let endDate = contract.endDate
+    if (form.effectiveDate && months) {
+      const end = new Date(form.effectiveDate)
+      end.setMonth(end.getMonth() + months)
+      endDate = end.toISOString().slice(0, 10)
+    }
+    updateContract(contract.id, {
+      name: form.name.trim(),
+      type: form.type.trim(),
+      signType: form.signType.trim(),
+      signSubject: form.signSubject.trim(),
+      signer: form.signer.trim(),
+      owner: form.owner.trim(),
+      signerManager: form.signerManager.trim(),
+      dept: form.dept.trim(),
+      amount: Number(form.amount) || 0,
+      effectiveDate: form.effectiveDate,
+      validMonths: months,
+      endDate,
+    })
+    onOpenChange(false)
+    toast.success("合同信息已更新")
+  }
+
+  const field = (label: string, key: keyof typeof form, opts?: { numeric?: boolean; date?: boolean }) => (
+    <div>
+      <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
+      <Input
+        type={opts?.date ? "date" : "text"}
+        inputMode={opts?.numeric ? "numeric" : undefined}
+        value={form[key]}
+        onChange={(e) =>
+          setForm({ ...form, [key]: opts?.numeric ? e.target.value.replace(/[^0-9]/g, "") : e.target.value })
+        }
+      />
+    </div>
+  )
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>编辑合同字段</DialogTitle>
+          <DialogDescription>修改合同的基本信息、签约信息与金额周期，保存后立即生效。</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {field("合同名称", "name")}
+          <div className="grid grid-cols-2 gap-3">
+            {field("合同类型", "type")}
+            {field("签约类型", "signType")}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {field("签约主体", "signSubject")}
+            {field("合同签订人", "signer")}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {field("销售负责人", "owner")}
+            {field("直属上级", "signerManager")}
+          </div>
+          {field("签约部门", "dept")}
+          <div className="grid grid-cols-2 gap-3">
+            {field("合同金额（元）", "amount", { numeric: true })}
+            {field("有效期（月）", "validMonths", { numeric: true })}
+          </div>
+          {field("生效日期", "effectiveDate", { date: true })}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            取消
+          </Button>
+          <Button onClick={submit}>保存</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

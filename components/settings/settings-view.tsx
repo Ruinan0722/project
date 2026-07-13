@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, GripVertical, Plus, ShieldCheck, Tags, UserCog, X } from "lucide-react"
+import { Check, Eye, GripVertical, Plus, ShieldCheck, Tags, UserCog, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -233,7 +233,7 @@ function TagEditor({ title, initial, placeholder }: { title: string; initial: st
 
 /* ===== 用户与权限 ===== */
 
-type UserRoleKey = "sdr" | "sales" | "leader" | "ops" | "presales" | "admin"
+type UserRoleKey = "sdr" | "sales" | "leader" | "ops" | "admin"
 
 interface UserRow {
   id: string
@@ -242,13 +242,12 @@ interface UserRow {
   role: UserRoleKey
 }
 
-const ROLE_ORDER: UserRoleKey[] = ["sdr", "sales", "leader", "ops", "presales", "admin"]
+const ROLE_ORDER: UserRoleKey[] = ["sdr", "sales", "leader", "ops", "admin"]
 const ROLE_LABEL: Record<UserRoleKey, string> = {
   sdr: "SDR",
   sales: "销售",
   leader: "销售 Leader",
   ops: "销售运营",
-  presales: "售前顾问",
   admin: "管理员",
 }
 
@@ -261,13 +260,21 @@ const INITIAL_USERS: UserRow[] = [
   { id: "u6", name: "孙管理", email: "admin@geo.com", role: "admin" },
 ]
 
-const PERMISSION_MATRIX: { feature: string; sdr: boolean; sales: boolean; leader: boolean; ops: boolean; admin: boolean }[] = [
-  { feature: "线索管理（承接 / 跟进）", sdr: true, sales: true, leader: true, ops: true, admin: true },
-  { feature: "线索转客户", sdr: true, sales: true, leader: true, ops: false, admin: true },
-  { feature: "客户管理（列表 / 详情）", sdr: false, sales: true, leader: true, ops: true, admin: true },
+// ○ 表示仅可查看（只读），✓ 表示可操作
+const PERMISSION_MATRIX: {
+  feature: string
+  sdr: boolean | "view"
+  sales: boolean | "view"
+  leader: boolean | "view"
+  ops: boolean | "view"
+  admin: boolean | "view"
+}[] = [
+  { feature: "线索管理（承接 / 跟进 / 转客户）", sdr: true, sales: false, leader: false, ops: true, admin: true },
+  { feature: "客户管理（列表 / 详情）", sdr: "view", sales: true, leader: true, ops: true, admin: true },
   { feature: "商机管理（创建 / 推进 / 输单）", sdr: false, sales: true, leader: true, ops: false, admin: true },
-  { feature: "需求管理（确认 / 转项目）", sdr: false, sales: true, leader: true, ops: true, admin: true },
-  { feature: "合同管理（签署 / 项目状态）", sdr: false, sales: true, leader: true, ops: true, admin: true },
+  { feature: "需求管理（确认 / 转项目）", sdr: "view", sales: true, leader: true, ops: true, admin: true },
+  { feature: "合同管理（查看范围）", sdr: false, sales: "view", leader: "view", ops: true, admin: true },
+  { feature: "合同新增 / 编辑字段", sdr: false, sales: false, leader: false, ops: true, admin: true },
   { feature: "数据看板（团队维度）", sdr: false, sales: false, leader: true, ops: true, admin: true },
   { feature: "系统设置（人员 / 权限 / 配置）", sdr: false, sales: false, leader: false, ops: false, admin: true },
 ]
@@ -353,10 +360,15 @@ function UsersConfig() {
   )
 }
 
-function PermCell({ allowed }: { allowed: boolean }) {
+function PermCell({ allowed }: { allowed: boolean | "view" }) {
   return (
     <td className="px-4 py-3 text-center">
-      {allowed ? (
+      {allowed === "view" ? (
+        <span className="mx-auto inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">
+          <Eye className="size-3" />
+          仅查看
+        </span>
+      ) : allowed ? (
         <Check className="mx-auto size-4 text-primary" />
       ) : (
         <X className="mx-auto size-4 text-muted-foreground/40" />
